@@ -20,9 +20,16 @@
 
 pragma solidity ^0.8.21;
 
-import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
-import "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
+import "openzeppelin-contracts/contracts/interfaces/IERC20Metadata.sol";
+import "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
+// This one is not in /contracts/interfaces for some reason
+import "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Permit.sol";
+
 import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+
+import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
+import "openzeppelin-contracts-upgradeable/contracts/access/extensions/AccessControlEnumerableUpgradeable.sol";
+import "openzeppelin-contracts-upgradeable/contracts/utils/PausableUpgradeable.sol";
 
 interface IERC1271 {
     function isValidSignature(
@@ -31,12 +38,10 @@ interface IERC1271 {
     ) external view returns (bytes4);
 }
 
-contract Vault is UUPSUpgradeable, AccessControlEnumerableUpgradeable {
+contract Vault is UUPSUpgradeable, AccessControlEnumerableUpgradeable, IERC20Metadata, IERC20Permit, PausableUpgradeable {
 
     // --- Storage Variables ---
 
-    // Admin
-    mapping (address => uint256) public wards;
     // ERC20
     string                                            public name;
     string                                            public symbol;
@@ -51,6 +56,11 @@ contract Vault is UUPSUpgradeable, AccessControlEnumerableUpgradeable {
 
     // --- Constants ---
 
+    // AccessControl
+    bytes32 public constant SSR_ROLE = keccak256("SSR_ROLE");
+    bytes32 public constant TAKER_ROLE = keccak256("TAKER_ROLE");
+    bytes32 public constant FREEZER_ROLE = keccak256("FREEZER_ROLE");
+
     // ERC20
     string  public constant version  = "1";
     uint8   public constant decimals = 18;
@@ -62,17 +72,15 @@ contract Vault is UUPSUpgradeable, AccessControlEnumerableUpgradeable {
     // EIP712
     bytes32 public constant PERMIT_TYPEHASH = keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
     IERC20 public immutable asset;
-    // Role ssr_setter?
 
     // --- Events ---
 
     // Admin
-    event Rely(address indexed usr);
-    event Deny(address indexed usr);
-    event File(bytes32 indexed what, uint256 data);
-    // ERC20
-    event Approval(address indexed owner, address indexed spender, uint256 value);
-    event Transfer(address indexed from, address indexed to, uint256 value);
+    event SsrSet(address indexed sender, uint256 oldSsr, uint256 newSsr);
+    event Take(address indexed sender, address indexed to, uint256 value);
+    // Paused/Unpaused come from PausableUpgradeable
+    // RoleGranted, RoleRevoked come from AccessControlUpgradeable (so does RoleAdminChanged but it
+    // is currently unreachable).
     // ERC4626
     event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares);
     event Withdraw(address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares);
@@ -82,11 +90,6 @@ contract Vault is UUPSUpgradeable, AccessControlEnumerableUpgradeable {
     event Drip(uint256 chi, uint256 diff);
 
     // --- Modifiers ---
-
-    modifier auth {
-        require(wards[msg.sender] == 1, "Vault/not-authorized");
-        _;
-    }
 
     // --- Constructor ---
 
@@ -98,7 +101,8 @@ contract Vault is UUPSUpgradeable, AccessControlEnumerableUpgradeable {
 
     // --- Upgradability ---
 
-    function initialize(string memory name_, string memory symbol_) initializer external {
+    function initialize(string memory name_, string memory symbol_, address admin) initializer external {
+        // TODO We need all __unchained_init functions of the full C3-linearization
         __UUPSUpgradeable_init();
 
         name = name_;
@@ -107,11 +111,10 @@ contract Vault is UUPSUpgradeable, AccessControlEnumerableUpgradeable {
         chi = uint192(RAY);
         rho = uint64(block.timestamp);
         ssr = RAY;
-        wards[msg.sender] = 1;
-        emit Rely(msg.sender);
+        _grantRole(DEFAULT_ADMIN_ROLE, admin);
     }
 
-    function _authorizeUpgrade(address newImplementation) internal override auth {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyRole(DEFAULT_ADMIN_ROLE) {}
 
     function getImplementation() external view returns (address) {
         return ERC1967Utils.getImplementation();
@@ -170,25 +173,31 @@ contract Vault is UUPSUpgradeable, AccessControlEnumerableUpgradeable {
         }
     }
 
-    // --- Admin external functions ---
+    // --- Privileged  external functions ---
 
-    function rely(address usr) external auth {
-        wards[usr] = 1;
-        emit Rely(usr);
+    function setSsr(uint256 data) external onlyRole(SSR_ROLE) {
+        require(data >= RAY, "Vault/wrong-ssr-value");
+        // TODO Should we just call drip() here?
+        require(rho == block.timestamp, "Vault/chi-not-up-to-date");
+        uint256 ssr_ = ssr;
+        ssr = data;
+        emit SsrSet(msg.sender, ssr_, data);
     }
 
-    function deny(address usr) external auth {
-        wards[usr] = 0;
-        emit Deny(usr);
+    function take(address to, uint256 value) external onlyRole(TAKER_ROLE) {
+        require(to != address(0) && to != address(this), "Vault/invalid-address");
+
+        _pushAsset(to, value);
+
+        emit Take(msg.sender, to, value);
     }
 
-    function file(bytes32 what, uint256 data) external auth {
-        if (what == "ssr") {
-            require(data >= RAY, "Vault/wrong-ssr-value");
-            require(rho == block.timestamp, "Vault/chi-not-up-to-date");
-            ssr = data;
-        } else revert("Vault/file-unrecognized-param");
-        emit File(what, data);
+    function freeze() external onlyRole(FREEZER_ROLE) {
+        _pause();
+    }
+
+    function unfreeze() external onlyRole(FREEZER_ROLE) {
+        _unpause();
     }
 
     // --- Savings Rate Accumulation external/internal function ---
@@ -455,5 +464,15 @@ contract Vault is UUPSUpgradeable, AccessControlEnumerableUpgradeable {
         bytes32 s
     ) external {
         permit(owner, spender, value, deadline, abi.encodePacked(r, s, v));
+    }
+
+    // --- ERC-20 Helpers ---
+
+    function _pushAsset(address to, uint256 value) internal {
+        SafeERC20.safeTransfer(asset, to, value);
+    }
+
+    function _pullAsset(address from, uint256 value) internal {
+        SafeERC20.safeTransferFrom(asset, from, address(this), value);
     }
 }
