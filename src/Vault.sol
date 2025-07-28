@@ -31,7 +31,7 @@ interface IERC1271 {
     ) external view returns (bytes4);
 }
 
-contract Vault is UUPSUpgradeable {
+contract Vault is UUPSUpgradeable, AccessControlEnumerableUpgradeable {
 
     // --- Storage Variables ---
 
