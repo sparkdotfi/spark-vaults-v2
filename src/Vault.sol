@@ -31,6 +31,8 @@ import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable
 import "openzeppelin-contracts-upgradeable/contracts/access/extensions/AccessControlEnumerableUpgradeable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/utils/PausableUpgradeable.sol";
 
+import "./IVault.sol";
+
 interface IERC1271 {
     function isValidSignature(
         bytes32,
@@ -38,17 +40,17 @@ interface IERC1271 {
     ) external view returns (bytes4);
 }
 
-contract Vault is UUPSUpgradeable, AccessControlEnumerableUpgradeable, IERC20Metadata, IERC20Permit, PausableUpgradeable {
+contract Vault is UUPSUpgradeable, AccessControlEnumerableUpgradeable, IERC20Metadata, IERC20Permit, PausableUpgradeable, IVault {
 
     // --- Storage Variables ---
 
     // ERC20
-    string                                            public name;
-    string                                            public symbol;
-    uint256                                           public totalSupply;
-    mapping (address => uint256)                      public balanceOf;
-    mapping (address => mapping (address => uint256)) public allowance;
-    mapping (address => uint256)                      public nonces;
+    string                                            public override(IERC20Metadata, IVault) name;
+    string                                            public override(IERC20Metadata, IVault) symbol;
+    uint256                                           public override(IERC20, IVault) totalSupply;
+    mapping (address => uint256)                      public override(IERC20, IVault) balanceOf;
+    mapping (address => mapping (address => uint256)) public override(IERC20, IVault) allowance;
+    mapping (address => uint256)                      public override(IERC20Permit, IVault) nonces;
     // Savings yield
     uint192 public chi;   // The Rate Accumulator  [ray]
     uint64  public rho;   // Time of last drip     [unix epoch time]
@@ -63,7 +65,7 @@ contract Vault is UUPSUpgradeable, AccessControlEnumerableUpgradeable, IERC20Met
 
     // ERC20
     string  public constant version  = "1";
-    uint8   public constant decimals = 18;
+    uint8   public constant override(IERC20Metadata, IVault) decimals = 18;
     // Math
     uint256 private constant RAY = 10 ** 27;
 
@@ -136,7 +138,7 @@ contract Vault is UUPSUpgradeable, AccessControlEnumerableUpgradeable, IERC20Met
         );
     }
 
-    function DOMAIN_SEPARATOR() external view returns (bytes32) {
+    function DOMAIN_SEPARATOR() external view override(IERC20Permit, IVault) returns (bytes32) {
         return _calculateDomainSeparator(block.chainid);
     }
 
@@ -219,7 +221,7 @@ contract Vault is UUPSUpgradeable, AccessControlEnumerableUpgradeable, IERC20Met
 
     // --- ERC20 Mutations ---
 
-    function transfer(address to, uint256 value) external returns (bool) {
+    function transfer(address to, uint256 value) external override(IERC20, IVault) returns (bool) {
         require(to != address(0) && to != address(this), "Vault/invalid-address");
         uint256 balance = balanceOf[msg.sender];
         require(balance >= value, "Vault/insufficient-balance");
@@ -234,7 +236,7 @@ contract Vault is UUPSUpgradeable, AccessControlEnumerableUpgradeable, IERC20Met
         return true;
     }
 
-    function transferFrom(address from, address to, uint256 value) external returns (bool) {
+    function transferFrom(address from, address to, uint256 value) external override(IERC20, IVault) returns (bool) {
         require(to != address(0) && to != address(this), "Vault/invalid-address");
         uint256 balance = balanceOf[from];
         require(balance >= value, "Vault/insufficient-balance");
@@ -260,7 +262,7 @@ contract Vault is UUPSUpgradeable, AccessControlEnumerableUpgradeable, IERC20Met
         return true;
     }
 
-    function approve(address spender, uint256 value) external returns (bool) {
+    function approve(address spender, uint256 value) external override(IERC20, IVault) returns (bool) {
         allowance[msg.sender][spender] = value;
 
         emit Approval(msg.sender, spender, value);
@@ -462,7 +464,7 @@ contract Vault is UUPSUpgradeable, AccessControlEnumerableUpgradeable, IERC20Met
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) external {
+    ) external override(IERC20Permit, IVault) {
         permit(owner, spender, value, deadline, abi.encodePacked(r, s, v));
     }
 

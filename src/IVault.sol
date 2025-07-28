@@ -17,7 +17,9 @@
 
 pragma solidity >=0.8.0;
 
-interface ISUsds {
+import "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
+
+interface IVault {
     function totalSupply() external view returns (uint256);
     function balanceOf(address) external view returns (uint256);
     function allowance(address, address) external view returns (uint256);
@@ -31,20 +33,20 @@ interface ISUsds {
     function PERMIT_TYPEHASH() external view returns (bytes32);
     function DOMAIN_SEPARATOR() external view returns (bytes32);
     function nonces(address) external view returns (uint256);
-    function vat() external view returns (address);
-    function vow() external view returns (address);
-    function usdsJoin() external view returns (address);
-    function usds() external view returns (address);
     function ssr() external view returns (uint256);
-    function chi() external view returns (uint256);
-    function rho() external view returns (uint256);
-    function asset() external view returns (address);
+    function chi() external view returns (uint192);
+    function rho() external view returns (uint64);
+    function asset() external view returns (IERC20);
     function totalAssets() external view returns (uint256);
     function convertToShares(uint256) external view returns (uint256);
     function convertToAssets(uint256) external view returns (uint256);
     function maxDeposit(address) external view returns (uint256);
     function previewDeposit(uint256) external view returns (uint256);
-    function drip() external view returns (uint256);
+    function setSsr(uint256 data) external;
+    function take(address to, uint256 value) external;
+    function freeze() external;
+    function unfreeze() external;
+    function drip() external returns (uint256);
     function deposit(uint256, address) external returns (uint256);
     function deposit(uint256, address, uint16) external returns (uint256);
     function maxMint(address) external view returns (uint256);
