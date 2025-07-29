@@ -17,9 +17,10 @@
 
 pragma solidity >=0.8.0;
 
-import "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
+import "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Permit.sol";
+import "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 
-interface IVault {
+interface IVault is IERC20Metadata, IERC20Permit, IERC4626 {
     function totalSupply() external view returns (uint256);
     function balanceOf(address) external view returns (uint256);
     function allowance(address, address) external view returns (uint256);
@@ -36,7 +37,7 @@ interface IVault {
     function ssr() external view returns (uint256);
     function chi() external view returns (uint192);
     function rho() external view returns (uint64);
-    function asset() external view returns (IERC20);
+    function asset() external view returns (address);
     function totalAssets() external view returns (uint256);
     function convertToShares(uint256) external view returns (uint256);
     function convertToAssets(uint256) external view returns (uint256);

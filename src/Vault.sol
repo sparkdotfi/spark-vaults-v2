@@ -40,17 +40,17 @@ interface IERC1271 {
     ) external view returns (bytes4);
 }
 
-contract Vault is UUPSUpgradeable, AccessControlEnumerableUpgradeable, IERC20Metadata, IERC20Permit, PausableUpgradeable, IVault {
+contract Vault is UUPSUpgradeable, AccessControlEnumerableUpgradeable, PausableUpgradeable, IVault {
 
     // --- Storage Variables ---
 
     // ERC20
-    string                                            public override(IERC20Metadata, IVault) name;
-    string                                            public override(IERC20Metadata, IVault) symbol;
-    uint256                                           public override(IERC20, IVault) totalSupply;
-    mapping (address => uint256)                      public override(IERC20, IVault) balanceOf;
-    mapping (address => mapping (address => uint256)) public override(IERC20, IVault) allowance;
-    mapping (address => uint256)                      public override(IERC20Permit, IVault) nonces;
+    string                                            public name;
+    string                                            public symbol;
+    uint256                                           public totalSupply;
+    mapping (address => uint256)                      public balanceOf;
+    mapping (address => mapping (address => uint256)) public allowance;
+    mapping (address => uint256)                      public nonces;
     // Savings yield
     uint192 public chi;   // The Rate Accumulator  [ray]
     uint64  public rho;   // Time of last drip     [unix epoch time]
@@ -65,7 +65,7 @@ contract Vault is UUPSUpgradeable, AccessControlEnumerableUpgradeable, IERC20Met
 
     // ERC20
     string  public constant version  = "1";
-    uint8   public constant override(IERC20Metadata, IVault) decimals = 18;
+    uint8   public constant decimals = 18;
     // Math
     uint256 private constant RAY = 10 ** 27;
 
@@ -73,7 +73,7 @@ contract Vault is UUPSUpgradeable, AccessControlEnumerableUpgradeable, IERC20Met
 
     // EIP712
     bytes32 public constant PERMIT_TYPEHASH = keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
-    IERC20 public immutable asset;
+    address public immutable asset;
 
     // --- Events ---
 
@@ -82,10 +82,7 @@ contract Vault is UUPSUpgradeable, AccessControlEnumerableUpgradeable, IERC20Met
     event Take(address indexed sender, address indexed to, uint256 value);
     // Paused/Unpaused come from PausableUpgradeable
     // RoleGranted, RoleRevoked come from AccessControlUpgradeable (so does RoleAdminChanged but it
-    // is currently unreachable).
-    // ERC4626
-    event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares);
-    event Withdraw(address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares);
+    // is currently unreachable). Transfer, Approval, Deposit, Withdraw come from ERC20 and 4626.
     // Referral
     event Referral(uint16 indexed referral, address indexed owner, uint256 assets, uint256 shares);
     // Savings yield
@@ -95,7 +92,7 @@ contract Vault is UUPSUpgradeable, AccessControlEnumerableUpgradeable, IERC20Met
 
     // --- Constructor ---
 
-    constructor(IERC20 asset_) {
+    constructor(address asset_) {
         _disableInitializers(); // Avoid initializing in the context of the implementation
 
         asset = asset_;
@@ -138,7 +135,7 @@ contract Vault is UUPSUpgradeable, AccessControlEnumerableUpgradeable, IERC20Met
         );
     }
 
-    function DOMAIN_SEPARATOR() external view override(IERC20Permit, IVault) returns (bytes32) {
+    function DOMAIN_SEPARATOR() external view returns (bytes32) {
         return _calculateDomainSeparator(block.chainid);
     }
 
@@ -179,8 +176,7 @@ contract Vault is UUPSUpgradeable, AccessControlEnumerableUpgradeable, IERC20Met
 
     function setSsr(uint256 data) external onlyRole(SSR_ROLE) {
         require(data >= RAY, "Vault/wrong-ssr-value");
-        // TODO Should we just call drip() here?
-        require(rho == block.timestamp, "Vault/chi-not-up-to-date");
+        drip();
         uint256 ssr_ = ssr;
         ssr = data;
         emit SsrSet(msg.sender, ssr_, data);
@@ -221,7 +217,7 @@ contract Vault is UUPSUpgradeable, AccessControlEnumerableUpgradeable, IERC20Met
 
     // --- ERC20 Mutations ---
 
-    function transfer(address to, uint256 value) external override(IERC20, IVault) returns (bool) {
+    function transfer(address to, uint256 value) external returns (bool) {
         require(to != address(0) && to != address(this), "Vault/invalid-address");
         uint256 balance = balanceOf[msg.sender];
         require(balance >= value, "Vault/insufficient-balance");
@@ -236,7 +232,7 @@ contract Vault is UUPSUpgradeable, AccessControlEnumerableUpgradeable, IERC20Met
         return true;
     }
 
-    function transferFrom(address from, address to, uint256 value) external override(IERC20, IVault) returns (bool) {
+    function transferFrom(address from, address to, uint256 value) external returns (bool) {
         require(to != address(0) && to != address(this), "Vault/invalid-address");
         uint256 balance = balanceOf[from];
         require(balance >= value, "Vault/insufficient-balance");
@@ -262,7 +258,7 @@ contract Vault is UUPSUpgradeable, AccessControlEnumerableUpgradeable, IERC20Met
         return true;
     }
 
-    function approve(address spender, uint256 value) external override(IERC20, IVault) returns (bool) {
+    function approve(address spender, uint256 value) external returns (bool) {
         allowance[msg.sender][spender] = value;
 
         emit Approval(msg.sender, spender, value);
@@ -275,7 +271,7 @@ contract Vault is UUPSUpgradeable, AccessControlEnumerableUpgradeable, IERC20Met
     function _mint(uint256 assets, uint256 shares, address receiver) internal {
         require(receiver != address(0) && receiver != address(this), "Vault/invalid-address");
 
-        asset.transferFrom(msg.sender, address(this), assets);
+        _pullAsset(msg.sender, assets);
 
         unchecked {
             balanceOf[receiver] = balanceOf[receiver] + shares; // note: we don't need an overflow check here b/c balanceOf[receiver] <= totalSupply
@@ -306,7 +302,7 @@ contract Vault is UUPSUpgradeable, AccessControlEnumerableUpgradeable, IERC20Met
             totalSupply      = totalSupply - shares;
         }
 
-        asset.transfer(receiver, assets);
+        _pushAsset(receiver, assets);
 
         emit Transfer(owner, address(0), shares);
         emit Withdraw(msg.sender, receiver, owner, assets, shares);
@@ -464,17 +460,17 @@ contract Vault is UUPSUpgradeable, AccessControlEnumerableUpgradeable, IERC20Met
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) external override(IERC20Permit, IVault) {
+    ) external {
         permit(owner, spender, value, deadline, abi.encodePacked(r, s, v));
     }
 
     // --- ERC-20 Helpers ---
 
     function _pushAsset(address to, uint256 value) internal {
-        SafeERC20.safeTransfer(asset, to, value);
+        SafeERC20.safeTransfer(IERC20(asset), to, value);
     }
 
     function _pullAsset(address from, uint256 value) internal {
-        SafeERC20.safeTransferFrom(asset, from, address(this), value);
+        SafeERC20.safeTransferFrom(IERC20(asset), from, address(this), value);
     }
 }

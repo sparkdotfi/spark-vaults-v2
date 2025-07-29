@@ -19,6 +19,20 @@ A role's admin [aka, a member of a role's admin role] can grant and revoke the r
 role), but but default cannot change the value of the admin role itself [that is possible with the `_setRoleAdmin`
 function which is internal and not used by default].
 
+### Reentrancy protection
+
+These functions interact with external contracts:
+
+* `take` - pushes assets to the Taker
+* `_mint` - pulls assets from the user
+* `_burn` - pushes assets to the user
+
+For `take` and `_mint`, interaction with the asset is the first state change, hence reentering will be equivalent to merely entering before they are called.
+
+Analogously, `_burn` interacts with the asset as the last state change, hence reentering will be equivalent to merely entering after `_burn` has finished.
+
+### Upgradeability
+
 ### Some outputs
 
 This is the inheritance tree  (last updated 2025-07-28):
