@@ -34,7 +34,7 @@ interface IERC1271 {
     ) external view returns (bytes4);
 }
 
-/// @note If the inheritance is updated, the functions in `initialize` must be upgraded as well.
+/// @dev If the inheritance is updated, the functions in `initialize` must be upgraded as well.
 ///       Last updated for: `Initializable, UUPSUpgradeable, AccessControlEnumerableUpgradeable,
 ///       Vault`.
 contract Vault is Initializable, UUPSUpgradeable, AccessControlEnumerableUpgradeable, IVault {
