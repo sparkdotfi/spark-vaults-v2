@@ -1,0 +1,469 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+/// Vault.sol
+
+// Copyright (C) 2017, 2018, 2019 dbrock, rain, mrchico
+// Copyright (C) 2021 Dai Foundation
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+pragma solidity 0.8.29;
+
+import { IERC20 }       from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
+import { ERC1967Utils } from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Utils.sol";
+import { SafeERC20 }    from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+
+import { AccessControlEnumerableUpgradeable, Initializable }
+    from "openzeppelin-contracts-upgradeable/contracts/access/extensions/AccessControlEnumerableUpgradeable.sol";
+
+import { UUPSUpgradeable } from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
+
+import { IVault } from "./IVault.sol";
+
+interface IERC1271 {
+    function isValidSignature(
+        bytes32,
+        bytes memory
+    ) external view returns (bytes4);
+}
+
+/// @dev If the inheritance is updated, the functions in `initialize` must be updated as well.
+///      Last updated for: `Initializable, UUPSUpgradeable, AccessControlEnumerableUpgradeable,
+///      IVault`.
+contract Vault is Initializable, UUPSUpgradeable, AccessControlEnumerableUpgradeable, IVault {
+
+    // --- Storage Variables ---
+
+    // ERC20
+    string                                            public name;
+    string                                            public symbol;
+    uint256                                           public totalSupply;
+    mapping (address => uint256)                      public balanceOf;
+    mapping (address => mapping (address => uint256)) public allowance;
+    mapping (address => uint256)                      public nonces;
+    // Savings yield
+    uint192 public chi;   // The Rate Accumulator  [ray]
+    uint64  public rho;   // Time of last drip     [unix epoch time]
+    uint256 public ssr;   // The Spark Savings Rate [ray]
+
+    // --- Constants ---
+
+    // AccessControl
+    bytes32 public constant SSR_ROLE     = keccak256("SSR_ROLE");
+    bytes32 public constant TAKER_ROLE   = keccak256("TAKER_ROLE");
+
+    // ERC20
+    string  public constant version  = "1";
+    uint8   public constant decimals = 18;
+    // Math
+    uint256 private constant RAY = 10 ** 27;
+
+    // --- Immutables ---
+
+    // EIP712
+    bytes32 public constant PERMIT_TYPEHASH = keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
+    address public immutable asset;
+
+    // --- Modifiers ---
+
+    // --- Constructor ---
+
+    constructor(address asset_) {
+        _disableInitializers(); // Avoid initializing in the context of the implementation
+
+        asset = asset_;
+    }
+
+    // --- Upgradability ---
+
+    function initialize(string memory name_, string memory symbol_, address admin) initializer external {
+        // @note If the inheritance is updated, the functions in `initialize` must be upgraded as well.
+        //       Last updated for: `Initializable, UUPSUpgradeable, AccessControlEnumerableUpgradeable,
+        //       IVault`.
+        // The C3-linearization is:
+        // ├──  1.Vault
+        // ├──  2.AccessControlEnumerableUpgradeable
+        // ├──  3.AccessControlUpgradeable
+        // ├──  4.ERC165Upgradeable
+        // ├──  5.ContextUpgradeable
+        // ├──  6.UUPSUpgradeable
+        // └──  7.Initializable
+        // Initializable doesn't have an initialization function.
+        // __UUPSUpgradeable_init_unchained();         <~ Noop (doesn't do anything).
+        // __Context_init_unchained();                 <~ Noop (doesn't do anything).
+        // __ERC165_init_unchained();                  <~ Noop (doesn't do anything).
+        // __AccessControl_init_unchained();           <~ Noop (doesn't do anything).
+        // __AccessControlEnumerable_init_unchained(); <~ Noop (doesn't do anything).
+
+        // Now let us initialize the Vault.
+        name = name_;
+        symbol = symbol_;
+
+        chi = uint192(RAY);
+        rho = uint64(block.timestamp);
+        ssr = RAY;
+        _grantRole(DEFAULT_ADMIN_ROLE, admin);
+    }
+
+    function _authorizeUpgrade(address newImplementation) internal override onlyRole(DEFAULT_ADMIN_ROLE) {}
+
+    function getImplementation() external view returns (address) {
+        return ERC1967Utils.getImplementation();
+    }
+
+    // --- Internals ---
+
+    // EIP712
+
+    function _calculateDomainSeparator(uint256 chainId) private view returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
+                keccak256(bytes(name)),
+                keccak256(bytes(version)),
+                chainId,
+                address(this)
+            )
+        );
+    }
+
+    function DOMAIN_SEPARATOR() external view returns (bytes32) {
+        return _calculateDomainSeparator(block.chainid);
+    }
+
+    // Math
+
+    function _rpow(uint256 x, uint256 n) internal pure returns (uint256 z) {
+        assembly {
+            switch x case 0 {switch n case 0 {z := RAY} default {z := 0}}
+            default {
+                switch mod(n, 2) case 0 { z := RAY } default { z := x }
+                let half := div(RAY, 2)  // for rounding.
+                for { n := div(n, 2) } n { n := div(n,2) } {
+                    let xx := mul(x, x)
+                    if iszero(eq(div(xx, x), x)) { revert(0,0) }
+                    let xxRound := add(xx, half)
+                    if lt(xxRound, xx) { revert(0,0) }
+                    x := div(xxRound, RAY)
+                    if mod(n,2) {
+                        let zx := mul(z, x)
+                        if and(iszero(iszero(x)), iszero(eq(div(zx, x), z))) { revert(0,0) }
+                        let zxRound := add(zx, half)
+                        if lt(zxRound, zx) { revert(0,0) }
+                        z := div(zxRound, RAY)
+                    }
+                }
+            }
+        }
+    }
+
+    function _divup(uint256 x, uint256 y) internal pure returns (uint256 z) {
+        // Note: _divup(0,0) will return 0 differing from natural solidity division
+        unchecked {
+            z = x != 0 ? ((x - 1) / y) + 1 : 0;
+        }
+    }
+
+    // --- Privileged  external functions ---
+
+    function setSsr(uint256 data) external onlyRole(SSR_ROLE) {
+        require(data >= RAY, "Vault/wrong-ssr-value");
+        drip();
+        uint256 ssr_ = ssr;
+        ssr = data;
+        emit SsrSet(msg.sender, ssr_, data);
+    }
+
+    function take(uint256 value) external onlyRole(TAKER_ROLE) {
+        _pushAsset(msg.sender, value);
+
+        emit Take(msg.sender, value);
+    }
+
+    // --- Savings Rate Accumulation external/internal function ---
+
+    function drip() public returns (uint256 nChi) {
+        (uint256 chi_, uint256 rho_) = (chi, rho);
+        uint256 diff;
+        if (block.timestamp > rho_) {
+            nChi = _rpow(ssr, block.timestamp - rho_) * chi_ / RAY;
+            uint256 totalSupply_ = totalSupply;
+            diff = totalSupply_ * nChi / RAY - totalSupply_ * chi_ / RAY;
+            chi = uint192(nChi); // safe as nChi is limited to maxUint256/RAY (which is < maxUint192)
+            rho = uint64(block.timestamp);
+        } else {
+            nChi = chi_;
+        }
+        emit Drip(nChi, diff);
+    }
+
+    // --- ERC20 Mutations ---
+
+    function transfer(address to, uint256 value) external returns (bool) {
+        require(to != address(0) && to != address(this), "Vault/invalid-address");
+        uint256 balance = balanceOf[msg.sender];
+        require(balance >= value, "Vault/insufficient-balance");
+
+        unchecked {
+            balanceOf[msg.sender] = balance - value;
+            balanceOf[to] += value; // note: we don't need an overflow check here b/c sum of all balances == totalSupply
+        }
+
+        emit Transfer(msg.sender, to, value);
+
+        return true;
+    }
+
+    function transferFrom(address from, address to, uint256 value) external returns (bool) {
+        require(to != address(0) && to != address(this), "Vault/invalid-address");
+        uint256 balance = balanceOf[from];
+        require(balance >= value, "Vault/insufficient-balance");
+
+        if (from != msg.sender) {
+            uint256 allowed = allowance[from][msg.sender];
+            if (allowed != type(uint256).max) {
+                require(allowed >= value, "Vault/insufficient-allowance");
+
+                unchecked {
+                    allowance[from][msg.sender] = allowed - value;
+                }
+            }
+        }
+
+        unchecked {
+            balanceOf[from] = balance - value;
+            balanceOf[to] += value; // note: we don't need an overflow check here b/c sum of all balances == totalSupply
+        }
+
+        emit Transfer(from, to, value);
+
+        return true;
+    }
+
+    function approve(address spender, uint256 value) external returns (bool) {
+        allowance[msg.sender][spender] = value;
+
+        emit Approval(msg.sender, spender, value);
+
+        return true;
+    }
+
+    // --- Mint/Burn Internal ---
+
+    function _mint(uint256 assets, uint256 shares, address receiver) internal {
+        require(receiver != address(0) && receiver != address(this), "Vault/invalid-address");
+
+        _pullAsset(msg.sender, assets);
+
+        unchecked {
+            balanceOf[receiver] = balanceOf[receiver] + shares; // note: we don't need an overflow check here b/c balanceOf[receiver] <= totalSupply
+            totalSupply = totalSupply + shares; // note: we don't need an overflow check here b/c shares totalSupply will always be <= asset totalSupply
+        }
+
+        emit Deposit(msg.sender, receiver, assets, shares);
+        emit Transfer(address(0), receiver, shares);
+    }
+
+    function _burn(uint256 assets, uint256 shares, address receiver, address owner) internal {
+        uint256 balance = balanceOf[owner];
+        require(balance >= shares, "Vault/insufficient-balance");
+
+        if (owner != msg.sender) {
+            uint256 allowed = allowance[owner][msg.sender];
+            if (allowed != type(uint256).max) {
+                require(allowed >= shares, "Vault/insufficient-allowance");
+
+                unchecked {
+                    allowance[owner][msg.sender] = allowed - shares;
+                }
+            }
+        }
+
+        unchecked {
+            balanceOf[owner] = balance - shares; // note: we don't need overflow checks b/c require(balance >= shares) and balance <= totalSupply
+            totalSupply      = totalSupply - shares;
+        }
+
+        _pushAsset(receiver, assets);
+
+        emit Transfer(owner, address(0), shares);
+        emit Withdraw(msg.sender, receiver, owner, assets, shares);
+    }
+
+    // --- ERC-4626 ---
+
+    function totalAssets() external view returns (uint256) {
+        return convertToAssets(totalSupply);
+    }
+
+    function convertToShares(uint256 assets) public view returns (uint256) {
+        uint256 chi_ = (block.timestamp > rho) ? _rpow(ssr, block.timestamp - rho) * chi / RAY : chi;
+        return assets * RAY / chi_;
+    }
+
+    function convertToAssets(uint256 shares) public view returns (uint256) {
+        uint256 chi_ = (block.timestamp > rho) ? _rpow(ssr, block.timestamp - rho) * chi / RAY : chi;
+        return shares * chi_ / RAY;
+    }
+
+    function maxDeposit(address) external pure returns (uint256) {
+        return type(uint256).max;
+    }
+
+    function previewDeposit(uint256 assets) external view returns (uint256) {
+        return convertToShares(assets);
+    }
+
+    function deposit(uint256 assets, address receiver) public returns (uint256 shares) {
+        shares = assets * RAY / drip();
+        _mint(assets, shares, receiver);
+    }
+
+    function deposit(uint256 assets, address receiver, uint16 referral) external returns (uint256 shares) {
+        shares = deposit(assets, receiver);
+        emit Referral(referral, receiver, assets, shares);
+    }
+
+    function maxMint(address) external pure returns (uint256) {
+        return type(uint256).max;
+    }
+
+    function previewMint(uint256 shares) external view returns (uint256) {
+        uint256 chi_ = (block.timestamp > rho) ? _rpow(ssr, block.timestamp - rho) * chi / RAY : chi;
+        return _divup(shares * chi_, RAY);
+    }
+
+    function mint(uint256 shares, address receiver) public returns (uint256 assets) {
+        assets = _divup(shares * drip(), RAY);
+        _mint(assets, shares, receiver);
+    }
+
+    function mint(uint256 shares, address receiver, uint16 referral) external returns (uint256 assets) {
+        assets = mint(shares, receiver);
+        emit Referral(referral, receiver, assets, shares);
+    }
+
+    function maxWithdraw(address owner) external view returns (uint256) {
+        return convertToAssets(balanceOf[owner]);
+    }
+
+    function previewWithdraw(uint256 assets) external view returns (uint256) {
+        uint256 chi_ = (block.timestamp > rho) ? _rpow(ssr, block.timestamp - rho) * chi / RAY : chi;
+        return _divup(assets * RAY, chi_);
+    }
+
+    function withdraw(uint256 assets, address receiver, address owner) external returns (uint256 shares) {
+        shares = _divup(assets * RAY, drip());
+        _burn(assets, shares, receiver, owner);
+    }
+
+    function maxRedeem(address owner) external view returns (uint256) {
+        return balanceOf[owner];
+    }
+
+    function previewRedeem(uint256 shares) external view returns (uint256) {
+        return convertToAssets(shares);
+    }
+
+    function redeem(uint256 shares, address receiver, address owner) external returns (uint256 assets) {
+        assets = shares * drip() / RAY;
+        _burn(assets, shares, receiver, owner);
+    }
+
+    // --- Approve by signature ---
+
+    function _isValidSignature(
+        address signer,
+        bytes32 digest,
+        bytes memory signature
+    ) internal view returns (bool valid) {
+        if (signature.length == 65) {
+            bytes32 r;
+            bytes32 s;
+            uint8 v;
+            assembly {
+                r := mload(add(signature, 0x20))
+                s := mload(add(signature, 0x40))
+                v := byte(0, mload(add(signature, 0x60)))
+            }
+            if (signer == ecrecover(digest, v, r, s)) {
+                return true;
+            }
+        }
+
+        if (signer.code.length > 0) {
+            (bool success, bytes memory result) = signer.staticcall(
+                abi.encodeCall(IERC1271.isValidSignature, (digest, signature))
+            );
+            valid = (success &&
+                result.length == 32 &&
+                abi.decode(result, (bytes4)) == IERC1271.isValidSignature.selector);
+        }
+    }
+
+    function permit(
+        address owner,
+        address spender,
+        uint256 value,
+        uint256 deadline,
+        bytes memory signature
+    ) public {
+        require(block.timestamp <= deadline, "Vault/permit-expired");
+        require(owner != address(0), "Vault/invalid-owner");
+
+        uint256 nonce;
+        unchecked { nonce = nonces[owner]++; }
+
+        bytes32 digest =
+            keccak256(abi.encodePacked(
+                "\x19\x01",
+                _calculateDomainSeparator(block.chainid),
+                keccak256(abi.encode(
+                    PERMIT_TYPEHASH,
+                    owner,
+                    spender,
+                    value,
+                    nonce,
+                    deadline
+                ))
+            ));
+
+        require(_isValidSignature(owner, digest, signature), "Vault/invalid-permit");
+
+        allowance[owner][spender] = value;
+        emit Approval(owner, spender, value);
+    }
+
+    function permit(
+        address owner,
+        address spender,
+        uint256 value,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external {
+        permit(owner, spender, value, deadline, abi.encodePacked(r, s, v));
+    }
+
+    // --- ERC-20 Helpers ---
+
+    function _pushAsset(address to, uint256 value) internal {
+        SafeERC20.safeTransfer(IERC20(asset), to, value);
+    }
+
+    function _pullAsset(address from, uint256 value) internal {
+        SafeERC20.safeTransferFrom(IERC20(asset), from, address(this), value);
+    }
+}
