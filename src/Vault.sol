@@ -56,7 +56,7 @@ contract Vault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, IVault {
         "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
     );
 
-    string public constant version  = "1";
+    string public constant version = "1";
 
     uint8 public constant decimals = 18;
 
