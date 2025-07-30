@@ -20,11 +20,11 @@
 
 pragma solidity 0.8.29;
 
-import { IERC20 }       from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import { ERC1967Utils } from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Utils.sol";
 import { SafeERC20 }    from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import { IERC20 }       from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
-import { AccessControlEnumerableUpgradeable, Initializable }
+import { AccessControlEnumerableUpgradeable }
     from "openzeppelin-contracts-upgradeable/contracts/access/extensions/AccessControlEnumerableUpgradeable.sol";
 
 import { UUPSUpgradeable } from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
@@ -41,141 +41,80 @@ interface IERC1271 {
 /// @dev If the inheritance is updated, the functions in `initialize` must be updated as well.
 ///      Last updated for: `Initializable, UUPSUpgradeable, AccessControlEnumerableUpgradeable,
 ///      IVault`.
-contract Vault is Initializable, UUPSUpgradeable, AccessControlEnumerableUpgradeable, IVault {
+contract Vault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, IVault {
 
-    // --- Storage Variables ---
+    /**********************************************************************************************/
+    /*** Constants                                                                              ***/
+    /**********************************************************************************************/
 
-    // ERC20
-    string                                            public name;
-    string                                            public symbol;
-    uint256                                           public totalSupply;
-    mapping (address => uint256)                      public balanceOf;
-    mapping (address => mapping (address => uint256)) public allowance;
-    mapping (address => uint256)                      public nonces;
-    // Savings yield
-    uint192 public chi;   // The Rate Accumulator  [ray]
-    uint64  public rho;   // Time of last drip     [unix epoch time]
-    uint256 public ssr;   // The Spark Savings Rate [ray]
+    uint256 private constant RAY = 1e27;
 
-    // --- Constants ---
+    bytes32 public constant SSR_ROLE   = keccak256("SSR_ROLE");
+    bytes32 public constant TAKER_ROLE = keccak256("TAKER_ROLE");
 
-    // AccessControl
-    bytes32 public constant SSR_ROLE     = keccak256("SSR_ROLE");
-    bytes32 public constant TAKER_ROLE   = keccak256("TAKER_ROLE");
+    bytes32 public constant PERMIT_TYPEHASH = keccak256(
+        "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
+    );
 
-    // ERC20
-    string  public constant version  = "1";
-    uint8   public constant decimals = 18;
-    // Math
-    uint256 private constant RAY = 10 ** 27;
+    string public constant version  = "1";
 
-    // --- Immutables ---
+    uint8 public constant decimals = 18;
 
-    // EIP712
-    bytes32 public constant PERMIT_TYPEHASH = keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
+    /**********************************************************************************************/
+    /*** Storage variables and immutables                                                       ***/
+    /**********************************************************************************************/
+
     address public immutable asset;
 
-    // --- Modifiers ---
+    string public name;
+    string public symbol;
 
-    // --- Constructor ---
+    uint64  public rho;  // Time of last drip     [unix epoch time]
+    uint192 public chi;  // The Rate Accumulator  [ray]
+    uint256 public ssr;  // The Spark Savings Rate [ray]
 
-    constructor(address asset_) {
+    uint256 public totalSupply;
+
+    mapping (address => uint256) public balanceOf;
+    mapping (address => uint256) public nonces;
+
+    mapping (address => mapping (address => uint256)) public allowance;
+
+    /**********************************************************************************************/
+    /*** Initialization and upgradeability                                                      ***/
+    /**********************************************************************************************/
+
+    constructor() {
         _disableInitializers(); // Avoid initializing in the context of the implementation
 
-        asset = asset_;
+        asset = address(0);
     }
 
-    // --- Upgradability ---
-
-    function initialize(string memory name_, string memory symbol_, address admin) initializer external {
-        // @note If the inheritance is updated, the functions in `initialize` must be upgraded as well.
-        //       Last updated for: `Initializable, UUPSUpgradeable, AccessControlEnumerableUpgradeable,
-        //       IVault`.
-        // The C3-linearization is:
-        // ├──  1.Vault
-        // ├──  2.AccessControlEnumerableUpgradeable
-        // ├──  3.AccessControlUpgradeable
-        // ├──  4.ERC165Upgradeable
-        // ├──  5.ContextUpgradeable
-        // ├──  6.UUPSUpgradeable
-        // └──  7.Initializable
-        // Initializable doesn't have an initialization function.
-        // __UUPSUpgradeable_init_unchained();         <~ Noop (doesn't do anything).
-        // __Context_init_unchained();                 <~ Noop (doesn't do anything).
-        // __ERC165_init_unchained();                  <~ Noop (doesn't do anything).
-        // __AccessControl_init_unchained();           <~ Noop (doesn't do anything).
-        // __AccessControlEnumerable_init_unchained(); <~ Noop (doesn't do anything).
-
-        // Now let us initialize the Vault.
-        name = name_;
+    // NOTE: Neither UUPSUpgradeable nor AccessControlEnumerableUpgradeable
+    //       require init functions to be called.
+    function initialize(string memory name_, string memory symbol_, address admin)
+        initializer external
+    {
+        name   = name_;
         symbol = symbol_;
+
+        _grantRole(DEFAULT_ADMIN_ROLE, admin);
 
         chi = uint192(RAY);
         rho = uint64(block.timestamp);
         ssr = RAY;
-        _grantRole(DEFAULT_ADMIN_ROLE, admin);
     }
 
-    function _authorizeUpgrade(address newImplementation) internal override onlyRole(DEFAULT_ADMIN_ROLE) {}
+    function _authorizeUpgrade(address newImplementation)
+        internal override onlyRole(DEFAULT_ADMIN_ROLE) {}
 
     function getImplementation() external view returns (address) {
         return ERC1967Utils.getImplementation();
     }
 
-    // --- Internals ---
-
-    // EIP712
-
-    function _calculateDomainSeparator(uint256 chainId) private view returns (bytes32) {
-        return keccak256(
-            abi.encode(
-                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
-                keccak256(bytes(name)),
-                keccak256(bytes(version)),
-                chainId,
-                address(this)
-            )
-        );
-    }
-
-    function DOMAIN_SEPARATOR() external view returns (bytes32) {
-        return _calculateDomainSeparator(block.chainid);
-    }
-
-    // Math
-
-    function _rpow(uint256 x, uint256 n) internal pure returns (uint256 z) {
-        assembly {
-            switch x case 0 {switch n case 0 {z := RAY} default {z := 0}}
-            default {
-                switch mod(n, 2) case 0 { z := RAY } default { z := x }
-                let half := div(RAY, 2)  // for rounding.
-                for { n := div(n, 2) } n { n := div(n,2) } {
-                    let xx := mul(x, x)
-                    if iszero(eq(div(xx, x), x)) { revert(0,0) }
-                    let xxRound := add(xx, half)
-                    if lt(xxRound, xx) { revert(0,0) }
-                    x := div(xxRound, RAY)
-                    if mod(n,2) {
-                        let zx := mul(z, x)
-                        if and(iszero(iszero(x)), iszero(eq(div(zx, x), z))) { revert(0,0) }
-                        let zxRound := add(zx, half)
-                        if lt(zxRound, zx) { revert(0,0) }
-                        z := div(zxRound, RAY)
-                    }
-                }
-            }
-        }
-    }
-
-    function _divup(uint256 x, uint256 y) internal pure returns (uint256 z) {
-        // Note: _divup(0,0) will return 0 differing from natural solidity division
-        unchecked {
-            z = x != 0 ? ((x - 1) / y) + 1 : 0;
-        }
-    }
-
-    // --- Privileged  external functions ---
+    /**********************************************************************************************/
+    /*** Role-based external functions                                                          ***/
+    /**********************************************************************************************/
 
     function setSsr(uint256 data) external onlyRole(SSR_ROLE) {
         require(data >= RAY, "Vault/wrong-ssr-value");
@@ -191,7 +130,9 @@ contract Vault is Initializable, UUPSUpgradeable, AccessControlEnumerableUpgrade
         emit Take(msg.sender, value);
     }
 
-    // --- Savings Rate Accumulation external/internal function ---
+    /**********************************************************************************************/
+    /*** Rate accumulation                                                                      ***/
+    /**********************************************************************************************/
 
     function drip() public returns (uint256 nChi) {
         (uint256 chi_, uint256 rho_) = (chi, rho);
@@ -200,7 +141,9 @@ contract Vault is Initializable, UUPSUpgradeable, AccessControlEnumerableUpgrade
             nChi = _rpow(ssr, block.timestamp - rho_) * chi_ / RAY;
             uint256 totalSupply_ = totalSupply;
             diff = totalSupply_ * nChi / RAY - totalSupply_ * chi_ / RAY;
-            chi = uint192(nChi); // safe as nChi is limited to maxUint256/RAY (which is < maxUint192)
+
+            // Safe as nChi is limited to maxUint256/RAY (which is < maxUint192)
+            chi = uint192(nChi);
             rho = uint64(block.timestamp);
         } else {
             nChi = chi_;
@@ -208,16 +151,27 @@ contract Vault is Initializable, UUPSUpgradeable, AccessControlEnumerableUpgrade
         emit Drip(nChi, diff);
     }
 
-    // --- ERC20 Mutations ---
+    /**********************************************************************************************/
+    /*** ERC20 external mutating functions                                                      ***/
+    /**********************************************************************************************/
+
+    function approve(address spender, uint256 value) external returns (bool) {
+        allowance[msg.sender][spender] = value;
+
+        emit Approval(msg.sender, spender, value);
+
+        return true;
+    }
 
     function transfer(address to, uint256 value) external returns (bool) {
         require(to != address(0) && to != address(this), "Vault/invalid-address");
         uint256 balance = balanceOf[msg.sender];
         require(balance >= value, "Vault/insufficient-balance");
 
+        // NOTE: Don't need an overflow check here b/c sum of all balances == totalSupply
         unchecked {
             balanceOf[msg.sender] = balance - value;
-            balanceOf[to] += value; // note: we don't need an overflow check here b/c sum of all balances == totalSupply
+            balanceOf[to] += value;
         }
 
         emit Transfer(msg.sender, to, value);
@@ -241,9 +195,10 @@ contract Vault is Initializable, UUPSUpgradeable, AccessControlEnumerableUpgrade
             }
         }
 
+        // NOTE: Don't need an overflow check here b/c sum of all balances == totalSupply
         unchecked {
             balanceOf[from] = balance - value;
-            balanceOf[to] += value; // note: we don't need an overflow check here b/c sum of all balances == totalSupply
+            balanceOf[to] += value;
         }
 
         emit Transfer(from, to, value);
@@ -251,166 +206,9 @@ contract Vault is Initializable, UUPSUpgradeable, AccessControlEnumerableUpgrade
         return true;
     }
 
-    function approve(address spender, uint256 value) external returns (bool) {
-        allowance[msg.sender][spender] = value;
-
-        emit Approval(msg.sender, spender, value);
-
-        return true;
-    }
-
-    // --- Mint/Burn Internal ---
-
-    function _mint(uint256 assets, uint256 shares, address receiver) internal {
-        require(receiver != address(0) && receiver != address(this), "Vault/invalid-address");
-
-        _pullAsset(msg.sender, assets);
-
-        unchecked {
-            balanceOf[receiver] = balanceOf[receiver] + shares; // note: we don't need an overflow check here b/c balanceOf[receiver] <= totalSupply
-            totalSupply = totalSupply + shares; // note: we don't need an overflow check here b/c shares totalSupply will always be <= asset totalSupply
-        }
-
-        emit Deposit(msg.sender, receiver, assets, shares);
-        emit Transfer(address(0), receiver, shares);
-    }
-
-    function _burn(uint256 assets, uint256 shares, address receiver, address owner) internal {
-        uint256 balance = balanceOf[owner];
-        require(balance >= shares, "Vault/insufficient-balance");
-
-        if (owner != msg.sender) {
-            uint256 allowed = allowance[owner][msg.sender];
-            if (allowed != type(uint256).max) {
-                require(allowed >= shares, "Vault/insufficient-allowance");
-
-                unchecked {
-                    allowance[owner][msg.sender] = allowed - shares;
-                }
-            }
-        }
-
-        unchecked {
-            balanceOf[owner] = balance - shares; // note: we don't need overflow checks b/c require(balance >= shares) and balance <= totalSupply
-            totalSupply      = totalSupply - shares;
-        }
-
-        _pushAsset(receiver, assets);
-
-        emit Transfer(owner, address(0), shares);
-        emit Withdraw(msg.sender, receiver, owner, assets, shares);
-    }
-
-    // --- ERC-4626 ---
-
-    function totalAssets() external view returns (uint256) {
-        return convertToAssets(totalSupply);
-    }
-
-    function convertToShares(uint256 assets) public view returns (uint256) {
-        uint256 chi_ = (block.timestamp > rho) ? _rpow(ssr, block.timestamp - rho) * chi / RAY : chi;
-        return assets * RAY / chi_;
-    }
-
-    function convertToAssets(uint256 shares) public view returns (uint256) {
-        uint256 chi_ = (block.timestamp > rho) ? _rpow(ssr, block.timestamp - rho) * chi / RAY : chi;
-        return shares * chi_ / RAY;
-    }
-
-    function maxDeposit(address) external pure returns (uint256) {
-        return type(uint256).max;
-    }
-
-    function previewDeposit(uint256 assets) external view returns (uint256) {
-        return convertToShares(assets);
-    }
-
-    function deposit(uint256 assets, address receiver) public returns (uint256 shares) {
-        shares = assets * RAY / drip();
-        _mint(assets, shares, receiver);
-    }
-
-    function deposit(uint256 assets, address receiver, uint16 referral) external returns (uint256 shares) {
-        shares = deposit(assets, receiver);
-        emit Referral(referral, receiver, assets, shares);
-    }
-
-    function maxMint(address) external pure returns (uint256) {
-        return type(uint256).max;
-    }
-
-    function previewMint(uint256 shares) external view returns (uint256) {
-        uint256 chi_ = (block.timestamp > rho) ? _rpow(ssr, block.timestamp - rho) * chi / RAY : chi;
-        return _divup(shares * chi_, RAY);
-    }
-
-    function mint(uint256 shares, address receiver) public returns (uint256 assets) {
-        assets = _divup(shares * drip(), RAY);
-        _mint(assets, shares, receiver);
-    }
-
-    function mint(uint256 shares, address receiver, uint16 referral) external returns (uint256 assets) {
-        assets = mint(shares, receiver);
-        emit Referral(referral, receiver, assets, shares);
-    }
-
-    function maxWithdraw(address owner) external view returns (uint256) {
-        return convertToAssets(balanceOf[owner]);
-    }
-
-    function previewWithdraw(uint256 assets) external view returns (uint256) {
-        uint256 chi_ = (block.timestamp > rho) ? _rpow(ssr, block.timestamp - rho) * chi / RAY : chi;
-        return _divup(assets * RAY, chi_);
-    }
-
-    function withdraw(uint256 assets, address receiver, address owner) external returns (uint256 shares) {
-        shares = _divup(assets * RAY, drip());
-        _burn(assets, shares, receiver, owner);
-    }
-
-    function maxRedeem(address owner) external view returns (uint256) {
-        return balanceOf[owner];
-    }
-
-    function previewRedeem(uint256 shares) external view returns (uint256) {
-        return convertToAssets(shares);
-    }
-
-    function redeem(uint256 shares, address receiver, address owner) external returns (uint256 assets) {
-        assets = shares * drip() / RAY;
-        _burn(assets, shares, receiver, owner);
-    }
-
-    // --- Approve by signature ---
-
-    function _isValidSignature(
-        address signer,
-        bytes32 digest,
-        bytes memory signature
-    ) internal view returns (bool valid) {
-        if (signature.length == 65) {
-            bytes32 r;
-            bytes32 s;
-            uint8 v;
-            assembly {
-                r := mload(add(signature, 0x20))
-                s := mload(add(signature, 0x40))
-                v := byte(0, mload(add(signature, 0x60)))
-            }
-            if (signer == ecrecover(digest, v, r, s)) {
-                return true;
-            }
-        }
-
-        if (signer.code.length > 0) {
-            (bool success, bytes memory result) = signer.staticcall(
-                abi.encodeCall(IERC1271.isValidSignature, (digest, signature))
-            );
-            valid = (success &&
-                result.length == 32 &&
-                abi.decode(result, (bytes4)) == IERC1271.isValidSignature.selector);
-        }
-    }
+    /**********************************************************************************************/
+    /*** EIP712 external mutating functions                                                     ***/
+    /**********************************************************************************************/
 
     function permit(
         address owner,
@@ -420,7 +218,7 @@ contract Vault is Initializable, UUPSUpgradeable, AccessControlEnumerableUpgrade
         bytes memory signature
     ) public {
         require(block.timestamp <= deadline, "Vault/permit-expired");
-        require(owner != address(0), "Vault/invalid-owner");
+        require(owner != address(0),         "Vault/invalid-owner");
 
         uint256 nonce;
         unchecked { nonce = nonces[owner]++; }
@@ -457,13 +255,238 @@ contract Vault is Initializable, UUPSUpgradeable, AccessControlEnumerableUpgrade
         permit(owner, spender, value, deadline, abi.encodePacked(r, s, v));
     }
 
-    // --- ERC-20 Helpers ---
+    /**********************************************************************************************/
+    /*** ERC4626 external mutating functions                                                    ***/
+    /**********************************************************************************************/
 
-    function _pushAsset(address to, uint256 value) internal {
-        SafeERC20.safeTransfer(IERC20(asset), to, value);
+    function deposit(uint256 assets, address receiver) public returns (uint256 shares) {
+        shares = assets * RAY / drip();
+        _mint(assets, shares, receiver);
+    }
+
+    function deposit(uint256 assets, address receiver, uint16 referral)
+        external returns (uint256 shares)
+    {
+        shares = deposit(assets, receiver);
+        emit Referral(referral, receiver, assets, shares);
+    }
+
+    function mint(uint256 shares, address receiver) public returns (uint256 assets) {
+        assets = _divup(shares * drip(), RAY);
+        _mint(assets, shares, receiver);
+    }
+
+    function mint(uint256 shares, address receiver, uint16 referral)
+        external returns (uint256 assets)
+    {
+        assets = mint(shares, receiver);
+        emit Referral(referral, receiver, assets, shares);
+    }
+
+    function withdraw(uint256 assets, address receiver, address owner)
+        external returns (uint256 shares)
+    {
+        shares = _divup(assets * RAY, drip());
+        _burn(assets, shares, receiver, owner);
+    }
+
+    function redeem(uint256 shares, address receiver, address owner)
+        external returns (uint256 assets)
+    {
+        assets = shares * drip() / RAY;
+        _burn(assets, shares, receiver, owner);
+    }
+
+    /**********************************************************************************************/
+    /*** ERC4626 external view functions                                                        ***/
+    /**********************************************************************************************/
+
+    function totalAssets() external view returns (uint256) {
+        return convertToAssets(totalSupply);
+    }
+
+    function convertToAssets(uint256 shares) public view returns (uint256) {
+        return shares * _getChi() / RAY;
+    }
+
+    function convertToShares(uint256 assets) public view returns (uint256) {
+        return assets * RAY / _getChi();
+    }
+
+    function maxDeposit(address) external pure returns (uint256) {
+        return type(uint256).max;
+    }
+
+    function maxMint(address) external pure returns (uint256) {
+        return type(uint256).max;
+    }
+
+    function maxRedeem(address owner) external view returns (uint256) {
+        return balanceOf[owner];
+    }
+
+    function maxWithdraw(address owner) external view returns (uint256) {
+        return convertToAssets(balanceOf[owner]);
+    }
+
+    function previewDeposit(uint256 assets) external view returns (uint256) {
+        return convertToShares(assets);
+    }
+
+    function previewMint(uint256 shares) external view returns (uint256) {
+        return _divup(shares * _getChi(), RAY);
+    }
+
+    function previewRedeem(uint256 shares) external view returns (uint256) {
+        return convertToAssets(shares);
+    }
+
+    function previewWithdraw(uint256 assets) external view returns (uint256) {
+        return _divup(assets * RAY, _getChi());
+    }
+
+    /**********************************************************************************************/
+    /*** Token transfer internal helper functions                                               ***/
+    /**********************************************************************************************/
+
+    function _burn(uint256 assets, uint256 shares, address receiver, address owner) internal {
+        uint256 balance = balanceOf[owner];
+        require(balance >= shares, "Vault/insufficient-balance");
+
+        if (owner != msg.sender) {
+            uint256 allowed = allowance[owner][msg.sender];
+            if (allowed != type(uint256).max) {
+                require(allowed >= shares, "Vault/insufficient-allowance");
+
+                unchecked {
+                    allowance[owner][msg.sender] = allowed - shares;
+                }
+            }
+        }
+
+        // NOTE: Don't need overflow checks as require(balance >= shares)
+        //       and balance <= totalSupply
+        unchecked {
+            balanceOf[owner] = balance - shares;
+            totalSupply      = totalSupply - shares;
+        }
+
+        _pushAsset(receiver, assets);
+
+        emit Transfer(owner, address(0), shares);
+        emit Withdraw(msg.sender, receiver, owner, assets, shares);
+    }
+
+    function _mint(uint256 assets, uint256 shares, address receiver) internal {
+        require(receiver != address(0) && receiver != address(this), "Vault/invalid-address");
+
+        _pullAsset(msg.sender, assets);
+
+        // NOTE: Don't need overflow checks as balanceOf[receiver] <= totalSupply
+        //       and shares <= totalSupply
+        unchecked {
+            balanceOf[receiver] = balanceOf[receiver] + shares;
+            totalSupply = totalSupply + shares;
+        }
+
+        emit Deposit(msg.sender, receiver, assets, shares);
+        emit Transfer(address(0), receiver, shares);
     }
 
     function _pullAsset(address from, uint256 value) internal {
         SafeERC20.safeTransferFrom(IERC20(asset), from, address(this), value);
     }
+
+    function _pushAsset(address to, uint256 value) internal {
+        SafeERC20.safeTransfer(IERC20(asset), to, value);
+    }
+
+    /**********************************************************************************************/
+    /*** EIP712 internal helper functions                                                       ***/
+    /**********************************************************************************************/
+
+    function _calculateDomainSeparator(uint256 chainId) private view returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
+                keccak256(bytes(name)),
+                keccak256(bytes(version)),
+                chainId,
+                address(this)
+            )
+        );
+    }
+
+    function DOMAIN_SEPARATOR() external view returns (bytes32) {
+        return _calculateDomainSeparator(block.chainid);
+    }
+
+    function _isValidSignature(
+        address signer,
+        bytes32 digest,
+        bytes memory signature
+    ) internal view returns (bool valid) {
+        if (signature.length == 65) {
+            bytes32 r;
+            bytes32 s;
+            uint8 v;
+            assembly {
+                r := mload(add(signature, 0x20))
+                s := mload(add(signature, 0x40))
+                v := byte(0, mload(add(signature, 0x60)))
+            }
+            if (signer == ecrecover(digest, v, r, s)) {
+                return true;
+            }
+        }
+
+        if (signer.code.length > 0) {
+            (bool success, bytes memory result) = signer.staticcall(
+                abi.encodeCall(IERC1271.isValidSignature, (digest, signature))
+            );
+            valid = (success &&
+                result.length == 32 &&
+                abi.decode(result, (bytes4)) == IERC1271.isValidSignature.selector);
+        }
+    }
+
+    /**********************************************************************************************/
+    /*** General internal helper functions                                                      ***/
+    /**********************************************************************************************/
+
+    function _divup(uint256 x, uint256 y) internal pure returns (uint256 z) {
+        // NOTE: _divup(0,0) will return 0 differing from natural solidity division
+        unchecked {
+            z = x != 0 ? ((x - 1) / y) + 1 : 0;
+        }
+    }
+
+    function _rpow(uint256 x, uint256 n) internal pure returns (uint256 z) {
+        assembly {
+            switch x case 0 {switch n case 0 {z := RAY} default {z := 0}}
+            default {
+                switch mod(n, 2) case 0 { z := RAY } default { z := x }
+                let half := div(RAY, 2)  // for rounding.
+                for { n := div(n, 2) } n { n := div(n,2) } {
+                    let xx := mul(x, x)
+                    if iszero(eq(div(xx, x), x)) { revert(0,0) }
+                    let xxRound := add(xx, half)
+                    if lt(xxRound, xx) { revert(0,0) }
+                    x := div(xxRound, RAY)
+                    if mod(n,2) {
+                        let zx := mul(z, x)
+                        if and(iszero(iszero(x)), iszero(eq(div(zx, x), z))) { revert(0,0) }
+                        let zxRound := add(zx, half)
+                        if lt(zxRound, zx) { revert(0,0) }
+                        z := div(zxRound, RAY)
+                    }
+                }
+            }
+        }
+    }
+
+    function _getChi() internal view returns (uint256) {
+        return (block.timestamp > rho) ? _rpow(ssr, block.timestamp - rho) * chi / RAY : chi;
+    }
+
 }
