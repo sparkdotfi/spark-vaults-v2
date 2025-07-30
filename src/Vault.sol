@@ -20,11 +20,6 @@
 
 pragma solidity 0.8.29;
 
-import "openzeppelin-contracts/contracts/interfaces/IERC20Metadata.sol";
-import "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
-// This one is not in /contracts/interfaces for some reason
-import "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Permit.sol";
-
 import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
@@ -40,7 +35,7 @@ interface IERC1271 {
     ) external view returns (bytes4);
 }
 
-contract Vault is UUPSUpgradeable, AccessControlEnumerableUpgradeable, PausableUpgradeable, IVault {
+contract Vault is Initializable, UUPSUpgradeable, AccessControlEnumerableUpgradeable, PausableUpgradeable, IVault {
 
     // --- Storage Variables ---
 
@@ -59,9 +54,8 @@ contract Vault is UUPSUpgradeable, AccessControlEnumerableUpgradeable, PausableU
     // --- Constants ---
 
     // AccessControl
-    bytes32 public constant SSR_ROLE = keccak256("SSR_ROLE");
-    bytes32 public constant TAKER_ROLE = keccak256("TAKER_ROLE");
-    bytes32 public constant FREEZER_ROLE = keccak256("FREEZER_ROLE");
+    bytes32 public constant SSR_ROLE     = keccak256("SSR_ROLE");
+    bytes32 public constant TAKER_ROLE   = keccak256("TAKER_ROLE");
 
     // ERC20
     string  public constant version  = "1";
@@ -182,20 +176,10 @@ contract Vault is UUPSUpgradeable, AccessControlEnumerableUpgradeable, PausableU
         emit SsrSet(msg.sender, ssr_, data);
     }
 
-    function take(address to, uint256 value) external onlyRole(TAKER_ROLE) {
-        require(to != address(0) && to != address(this), "Vault/invalid-address");
-
-        _pushAsset(to, value);
+    function take(uint256 value) external onlyRole(TAKER_ROLE) {
+        _pushAsset(msg.sender, value);
 
         emit Take(msg.sender, to, value);
-    }
-
-    function freeze() external onlyRole(FREEZER_ROLE) {
-        _pause();
-    }
-
-    function unfreeze() external onlyRole(FREEZER_ROLE) {
-        _unpause();
     }
 
     // --- Savings Rate Accumulation external/internal function ---
