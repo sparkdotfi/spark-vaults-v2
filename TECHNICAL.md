@@ -35,38 +35,50 @@ Analogously, `_burn` interacts with the asset as the last state change, hence re
 
 ### Some outputs
 
-This is the inheritance tree  (last updated 2025-07-28):
+Llast updated when line was `contract Vault is Initializable, UUPSUpgradeable, AccessControlEnumerableUpgradeable, IVault {`):
+
+This is the inheritance tree:
 
 ```
 ❯ wake print inheritance-tree -n Vault
-[15:45:27] Found 2 *.sol files in 0.07 s                                                 print.py:466
-           Loaded previous build in 0.28 s                                            compiler.py:862
-           Compiled 0 files using 0 solc runs in 0.00 s                              compiler.py:1242
-           Processed compilation results in 0.00 s                                   compiler.py:1495
+[12:22:26] Found 2 *.sol files in 0.09 s                                                 print.py:466
+           Loaded previous build in 0.27 s                                            compiler.py:862
+[12:22:27] Compiled 33 files using 1 solc runs in 0.46 s                             compiler.py:1242
+[12:22:28] Processed compilation results in 0.26 s                                   compiler.py:1495
+           Wrote build artifacts in 0.19 s                                           compiler.py:1622
 Vault inheritance tree
+├── Initializable
 ├── UUPSUpgradeable
 │   ├── Initializable
 │   └── IERC1822Proxiable
-└── AccessControlEnumerableUpgradeable
-    ├── Initializable
-    ├── IAccessControlEnumerable
-    │   └── IAccessControl
-    └── AccessControlUpgradeable
-        ├── Initializable
-        ├── ContextUpgradeable
-        │   └── Initializable
-        ├── IAccessControl
-        └── ERC165Upgradeable
-            ├── Initializable
-            └── IERC165
+├── AccessControlEnumerableUpgradeable
+│   ├── Initializable
+│   ├── IAccessControlEnumerable
+│   │   └── IAccessControl
+│   └── AccessControlUpgradeable
+│       ├── Initializable
+│       ├── ContextUpgradeable
+│       │   └── Initializable
+│       ├── IAccessControl
+│       └── ERC165Upgradeable
+│           ├── Initializable
+│           └── IERC165
+└── IVault
+    ├── IERC20Metadata
+    │   └── IERC20
+    ├── IERC20Permit
+    └── IERC4626
+        ├── IERC20
+        └── IERC20Metadata
+            └── IERC20
 ```
 
-giving rise to this inheritance chain (last updated 2025-07-28):
+giving rise to this inheritance chain:
 
 ```
 ❯ wake print c3-linearization src/Vault.sol
-[15:47:15] Found 2 *.sol files in 0.08 s                                                 print.py:466
-[15:47:16] Loaded previous build in 0.28 s                                            compiler.py:862
+[12:23:02] Found 2 *.sol files in 0.08 s                                                 print.py:466
+           Loaded previous build in 0.25 s                                            compiler.py:862
            Compiled 0 files using 0 solc runs in 0.00 s                              compiler.py:1242
            Processed compilation results in 0.00 s                                   compiler.py:1495
 Vault C3 linearization ordered
@@ -80,28 +92,27 @@ Vault C3 linearization ordered
 └──  7.Initializable
 ```
 
-This is the storage layout (last updated 2025-07-28):
+This is the storage layout:
 
 ```
 ❯ wake print storage-layout
-[15:44:28] Found 2 *.sol files in 0.10 s                                                 print.py:466
-           Loaded previous build in 0.28 s                                            compiler.py:862
+[12:23:21] Found 2 *.sol files in 0.09 s                                                 print.py:466
+           Loaded previous build in 0.25 s                                            compiler.py:862
            Compiled 0 files using 0 solc runs in 0.00 s                              compiler.py:1242
            Processed compilation results in 0.00 s                                   compiler.py:1495
-                                    Vault storage layout
+                                    Vault storage layout                                    
 ┏━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┓
 ┃ Slot ┃ Offset ┃ Name        ┃ Type                                            ┃ Contract ┃
 ┡━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━┩
-│ 0    │ 0      │ wards       │ mapping(address => uint256)                     │ Vault    │
-│ 1    │ 0      │ name        │ string                                          │ Vault    │
-│ 2    │ 0      │ symbol      │ string                                          │ Vault    │
-│ 3    │ 0      │ totalSupply │ uint256                                         │ Vault    │
-│ 4    │ 0      │ balanceOf   │ mapping(address => uint256)                     │ Vault    │
-│ 5    │ 0      │ allowance   │ mapping(address => mapping(address => uint256)) │ Vault    │
-│ 6    │ 0      │ nonces      │ mapping(address => uint256)                     │ Vault    │
-│ 7    │ 0      │ chi         │ uint192                                         │ Vault    │
+│ 0    │ 0      │ name        │ string                                          │ Vault    │
+│ 1    │ 0      │ symbol      │ string                                          │ Vault    │
+│ 2    │ 0      │ totalSupply │ uint256                                         │ Vault    │
+│ 3    │ 0      │ balanceOf   │ mapping(address => uint256)                     │ Vault    │
+│ 4    │ 0      │ allowance   │ mapping(address => mapping(address => uint256)) │ Vault    │
+│ 5    │ 0      │ nonces      │ mapping(address => uint256)                     │ Vault    │
+│ 6    │ 0      │ chi         │ uint192                                         │ Vault    │
 │      │ 24     │ rho         │ uint64                                          │ Vault    │
-│ 8    │ 0      │ ssr         │ uint256                                         │ Vault    │
+│ 7    │ 0      │ ssr         │ uint256                                         │ Vault    │
 └──────┴────────┴─────────────┴─────────────────────────────────────────────────┴──────────┘
 ```
 

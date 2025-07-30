@@ -24,7 +24,6 @@ import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/access/extensions/AccessControlEnumerableUpgradeable.sol";
-import "openzeppelin-contracts-upgradeable/contracts/utils/PausableUpgradeable.sol";
 
 import "./IVault.sol";
 
@@ -35,7 +34,10 @@ interface IERC1271 {
     ) external view returns (bytes4);
 }
 
-contract Vault is Initializable, UUPSUpgradeable, AccessControlEnumerableUpgradeable, PausableUpgradeable, IVault {
+/// @note If the inheritance is updated, the functions in `initialize` must be upgraded as well.
+///       Last updated for: `Initializable, UUPSUpgradeable, AccessControlEnumerableUpgradeable,
+///       Vault`.
+contract Vault is Initializable, UUPSUpgradeable, AccessControlEnumerableUpgradeable, IVault {
 
     // --- Storage Variables ---
 
@@ -73,8 +75,7 @@ contract Vault is Initializable, UUPSUpgradeable, AccessControlEnumerableUpgrade
 
     // Admin
     event SsrSet(address indexed sender, uint256 oldSsr, uint256 newSsr);
-    event Take(address indexed sender, address indexed to, uint256 value);
-    // Paused/Unpaused come from PausableUpgradeable
+    event Take(address indexed to, uint256 value);
     // RoleGranted, RoleRevoked come from AccessControlUpgradeable (so does RoleAdminChanged but it
     // is currently unreachable). Transfer, Approval, Deposit, Withdraw come from ERC20 and 4626.
     // Referral
@@ -95,9 +96,25 @@ contract Vault is Initializable, UUPSUpgradeable, AccessControlEnumerableUpgrade
     // --- Upgradability ---
 
     function initialize(string memory name_, string memory symbol_, address admin) initializer external {
-        // TODO We need all __unchained_init functions of the full C3-linearization
-        __UUPSUpgradeable_init();
+        // @note If the inheritance is updated, the functions in `initialize` must be upgraded as well.
+        //       Last updated for: `Initializable, UUPSUpgradeable, AccessControlEnumerableUpgradeable,
+        //       Vault`.
+        // The C3-linearization is:
+        // ├──  1.Vault
+        // ├──  2.AccessControlEnumerableUpgradeable
+        // ├──  3.AccessControlUpgradeable
+        // ├──  4.ERC165Upgradeable
+        // ├──  5.ContextUpgradeable
+        // ├──  6.UUPSUpgradeable
+        // └──  7.Initializable
+        // Initializable doesn't have an initialization function.
+        __UUPSUpgradeable_init_unchained();         // Noop (doesn't do anything).
+        __Context_init_unchained();                 // Noop (doesn't do anything).
+        __ERC165_init_unchained();                  // Noop (doesn't do anything).
+        __AccessControl_init_unchained();           // Noop (doesn't do anything).
+        __AccessControlEnumerable_init_unchained(); // Noop (doesn't do anything).
 
+        // Now let us initialize the Vault.
         name = name_;
         symbol = symbol_;
 
@@ -179,7 +196,7 @@ contract Vault is Initializable, UUPSUpgradeable, AccessControlEnumerableUpgrade
     function take(uint256 value) external onlyRole(TAKER_ROLE) {
         _pushAsset(msg.sender, value);
 
-        emit Take(msg.sender, to, value);
+        emit Take(msg.sender, value);
     }
 
     // --- Savings Rate Accumulation external/internal function ---

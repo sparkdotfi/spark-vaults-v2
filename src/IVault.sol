@@ -44,9 +44,7 @@ interface IVault is IERC20Metadata, IERC20Permit, IERC4626 {
     function maxDeposit(address) external view returns (uint256);
     function previewDeposit(uint256) external view returns (uint256);
     function setSsr(uint256 data) external;
-    function take(address to, uint256 value) external;
-    function freeze() external;
-    function unfreeze() external;
+    function take(uint256 value) external;
     function drip() external returns (uint256);
     function deposit(uint256, address) external returns (uint256);
     function deposit(uint256, address, uint16) external returns (uint256);
