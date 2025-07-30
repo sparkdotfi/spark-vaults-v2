@@ -17,10 +17,18 @@
 
 pragma solidity >=0.8.0;
 
-import "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Permit.sol";
-import "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
+import { IERC20Permit } from "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Permit.sol";
+import { IERC20Metadata, IERC4626 } from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 
 interface IVault is IERC20Metadata, IERC20Permit, IERC4626 {
+    // Admin
+    event SsrSet(address indexed sender, uint256 oldSsr, uint256 newSsr);
+    event Take(address indexed to, uint256 value);
+    // Referral
+    event Referral(uint16 indexed referral, address indexed owner, uint256 assets, uint256 shares);
+    // Savings yield
+    event Drip(uint256 chi, uint256 diff);
+
     function totalSupply() external view returns (uint256);
     function balanceOf(address) external view returns (uint256);
     function allowance(address, address) external view returns (uint256);

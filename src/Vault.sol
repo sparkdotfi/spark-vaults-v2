@@ -20,12 +20,16 @@
 
 pragma solidity 0.8.29;
 
-import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import { IERC20 }       from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
+import { ERC1967Utils } from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Utils.sol";
+import { SafeERC20 }    from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
-import "openzeppelin-contracts-upgradeable/contracts/access/extensions/AccessControlEnumerableUpgradeable.sol";
+import { AccessControlEnumerableUpgradeable, Initializable }
+    from "openzeppelin-contracts-upgradeable/contracts/access/extensions/AccessControlEnumerableUpgradeable.sol";
 
-import "./IVault.sol";
+import { UUPSUpgradeable } from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
+
+import { IVault } from "./IVault.sol";
 
 interface IERC1271 {
     function isValidSignature(
@@ -34,9 +38,9 @@ interface IERC1271 {
     ) external view returns (bytes4);
 }
 
-/// @dev If the inheritance is updated, the functions in `initialize` must be upgraded as well.
-///       Last updated for: `Initializable, UUPSUpgradeable, AccessControlEnumerableUpgradeable,
-///       Vault`.
+/// @dev If the inheritance is updated, the functions in `initialize` must be updated as well.
+///      Last updated for: `Initializable, UUPSUpgradeable, AccessControlEnumerableUpgradeable,
+///      IVault`.
 contract Vault is Initializable, UUPSUpgradeable, AccessControlEnumerableUpgradeable, IVault {
 
     // --- Storage Variables ---
@@ -71,18 +75,6 @@ contract Vault is Initializable, UUPSUpgradeable, AccessControlEnumerableUpgrade
     bytes32 public constant PERMIT_TYPEHASH = keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
     address public immutable asset;
 
-    // --- Events ---
-
-    // Admin
-    event SsrSet(address indexed sender, uint256 oldSsr, uint256 newSsr);
-    event Take(address indexed to, uint256 value);
-    // RoleGranted, RoleRevoked come from AccessControlUpgradeable (so does RoleAdminChanged but it
-    // is currently unreachable). Transfer, Approval, Deposit, Withdraw come from ERC20 and 4626.
-    // Referral
-    event Referral(uint16 indexed referral, address indexed owner, uint256 assets, uint256 shares);
-    // Savings yield
-    event Drip(uint256 chi, uint256 diff);
-
     // --- Modifiers ---
 
     // --- Constructor ---
@@ -98,7 +90,7 @@ contract Vault is Initializable, UUPSUpgradeable, AccessControlEnumerableUpgrade
     function initialize(string memory name_, string memory symbol_, address admin) initializer external {
         // @note If the inheritance is updated, the functions in `initialize` must be upgraded as well.
         //       Last updated for: `Initializable, UUPSUpgradeable, AccessControlEnumerableUpgradeable,
-        //       Vault`.
+        //       IVault`.
         // The C3-linearization is:
         // ├──  1.Vault
         // ├──  2.AccessControlEnumerableUpgradeable
@@ -108,11 +100,11 @@ contract Vault is Initializable, UUPSUpgradeable, AccessControlEnumerableUpgrade
         // ├──  6.UUPSUpgradeable
         // └──  7.Initializable
         // Initializable doesn't have an initialization function.
-        __UUPSUpgradeable_init_unchained();         // Noop (doesn't do anything).
-        __Context_init_unchained();                 // Noop (doesn't do anything).
-        __ERC165_init_unchained();                  // Noop (doesn't do anything).
-        __AccessControl_init_unchained();           // Noop (doesn't do anything).
-        __AccessControlEnumerable_init_unchained(); // Noop (doesn't do anything).
+        // __UUPSUpgradeable_init_unchained();         <~ Noop (doesn't do anything).
+        // __Context_init_unchained();                 <~ Noop (doesn't do anything).
+        // __ERC165_init_unchained();                  <~ Noop (doesn't do anything).
+        // __AccessControl_init_unchained();           <~ Noop (doesn't do anything).
+        // __AccessControlEnumerable_init_unchained(); <~ Noop (doesn't do anything).
 
         // Now let us initialize the Vault.
         name = name_;
