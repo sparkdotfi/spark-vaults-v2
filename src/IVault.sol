@@ -31,7 +31,6 @@ interface IVault is IERC20Permit, IERC4626 {
     // Valuation functions
     function chi() external view returns (uint192);
     function drip() external returns (uint256);
-    function getChi() external view returns (uint256);
     function rho() external view returns (uint64);
     function setSsr(uint256 data) external;
     function ssr() external view returns (uint256);
