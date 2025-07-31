@@ -61,10 +61,10 @@ contract Vault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, IVault {
     uint8 public constant decimals = 18;
 
     /**********************************************************************************************/
-    /*** Storage variables and immutables                                                       ***/
+    /*** Storage variables                                                                      ***/
     /**********************************************************************************************/
 
-    address public immutable asset;
+    address public asset;
 
     string public name;
     string public symbol;
@@ -86,15 +86,14 @@ contract Vault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, IVault {
 
     constructor() {
         _disableInitializers(); // Avoid initializing in the context of the implementation
-
-        asset = address(0);
     }
 
     // NOTE: Neither UUPSUpgradeable nor AccessControlEnumerableUpgradeable
     //       require init functions to be called.
-    function initialize(string memory name_, string memory symbol_, address admin)
+    function initialize(address asset_, string memory name_, string memory symbol_, address admin)
         initializer external
     {
+        asset  = asset_;
         name   = name_;
         symbol = symbol_;
 
