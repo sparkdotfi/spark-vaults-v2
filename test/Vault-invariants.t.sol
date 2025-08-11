@@ -43,7 +43,7 @@ contract VaultHandler is StdUtils, StdCheats {
     IVault   impl;
 
     address immutable admin;
-    address immutable ssrSetter;
+    address immutable setter;
     address immutable taker;
 
     uint256 constant N = 5;
@@ -65,7 +65,7 @@ contract VaultHandler is StdUtils, StdCheats {
 
 
         admin = vm.addr(1);
-        ssrSetter = vm.addr(2);
+        setter = vm.addr(2);
         taker = vm.addr(3);
 
         proxyACE.grantRole(DEFAULT_ADMIN_ROLE, admin);
@@ -77,21 +77,21 @@ contract VaultHandler is StdUtils, StdCheats {
         }
     }
 
-    function setSsr(bool fail, uint256 failCallerIndex, uint256 ssr) external {
+    function setSsr(bool authFail, uint256 failCallerSeed, uint256 ssr) external {
         numCalls["setSsr"]++;
         ssr = bound(ssr, RAY, 1000000021979553151239153027); // between 0% and 100% apy
-        if (fail) {
+        if (authFail) {
             uint256 mod = 3 + users.length;
-            failCallerIndex = bound(failCallerIndex, 0, mod - 1);
+            failCallerSeed = bound(failCallerSeed, 0, mod - 1);
             address caller;
-            if (failCallerIndex == 0) {
+            if (failCallerSeed == 0) {
                 caller = address(this); // this contract
-            } else if (failCallerIndex == 1) {
+            } else if (failCallerSeed == 1) {
                 caller = admin; // admin
-            } else if (failCallerIndex == 2) {
+            } else if (failCallerSeed == 2) {
                 caller = taker; // taker
             } else {
-                caller = users[failCallerIndex - 3]; // user
+                caller = users[failCallerSeed - 3]; // user
             }
             vm.expectRevert(abi.encodeWithSelector(
                 IAccessControl.AccessControlUnauthorizedAccount.selector, caller, SETTER_ROLE
