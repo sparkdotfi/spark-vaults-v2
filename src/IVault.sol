@@ -34,6 +34,7 @@ interface IVault is IERC20Permit, IERC4626 {
     function rho() external view returns (uint64);
     function setSsr(uint256 data) external;
     function ssr() external view returns (uint256);
+    function nowChi() external view returns (uint256);
 
     // ERC4626 functions with referrals
     function deposit(uint256, address, uint16) external returns (uint256);

@@ -305,11 +305,11 @@ contract Vault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, IVault {
     }
 
     function convertToAssets(uint256 shares) public view returns (uint256) {
-        return shares * _getChi() / RAY;
+        return shares * nowChi() / RAY;
     }
 
     function convertToShares(uint256 assets) public view returns (uint256) {
-        return assets * RAY / _getChi();
+        return assets * RAY / nowChi();
     }
 
     function maxDeposit(address) external pure returns (uint256) {
@@ -333,7 +333,7 @@ contract Vault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, IVault {
     }
 
     function previewMint(uint256 shares) external view returns (uint256) {
-        return _divup(shares * _getChi(), RAY);
+        return _divup(shares * nowChi(), RAY);
     }
 
     function previewRedeem(uint256 shares) external view returns (uint256) {
@@ -341,7 +341,7 @@ contract Vault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, IVault {
     }
 
     function previewWithdraw(uint256 assets) external view returns (uint256) {
-        return _divup(assets * RAY, _getChi());
+        return _divup(assets * RAY, nowChi());
     }
 
     /**********************************************************************************************/
@@ -484,7 +484,7 @@ contract Vault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, IVault {
         }
     }
 
-    function _getChi() internal view returns (uint256) {
+    function nowChi() public view returns (uint256) {
         return (block.timestamp > rho) ? _rpow(ssr, block.timestamp - rho) * chi / RAY : chi;
     }
 

@@ -1,4 +1,4 @@
-import { StdUtils, StdCheats, Vm, Test, console } from "forge-std/Test.sol";
+import { StdUtils, StdCheats, Vm, Test, console, stdError } from "forge-std/Test.sol";
 import { StdInvariant } from "forge-std/StdInvariant.sol";
 
 import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
@@ -69,39 +69,4 @@ contract Init is StdUtils, StdCheats {
     //     proxy.drip();
     // }
     //
-    // function deposit(uint256 assets) external {
-    //     numCalls["deposit"]++;
-    //     deal(address(usds), address(this), assets);
-    //     usds.approve(address(proxy), assets);
-    //     proxy.deposit(assets, address(this));
-    // }
-    //
-    // function mint(uint256 shares) external {
-    //     numCalls["mint"]++;
-    //     deal(address(usds), address(this), proxy.previewMint(shares));
-    //     usds.approve(address(proxy), proxy.previewMint(shares));
-    //     proxy.mint(shares, address(this));
-    // }
-    //
-    // function withdraw(uint256 assets) external {
-    //     numCalls["withdraw"]++;
-    //     assets = bound(assets, 0, proxy.previewWithdraw(proxy.balanceOf(address(this))));
-    //     proxy.withdraw(assets, address(this), address(this));
-    // }
-    //
-    // function withdrawAll() external {
-    //     numCalls["withdrawAll"]++;
-    //     proxy.withdraw(proxy.previewWithdraw(proxy.balanceOf(address(this))), address(this), address(this));
-    // }
-    //
-    // function redeem(uint256 shares) external {
-    //     numCalls["redeem"]++;
-    //     shares = bound(shares, 0, proxy.balanceOf(address(this)));
-    //     proxy.redeem(shares, address(this), address(this));
-    // }
-    //
-    // function redeemAll() external {
-    //     numCalls["redeemAll"]++;
-    //     proxy.redeem(proxy.balanceOf(address(this)), address(this), address(this));
-    // }
 }

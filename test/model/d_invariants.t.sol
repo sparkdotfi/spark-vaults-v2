@@ -2,7 +2,7 @@
 
 import "./c_flows_other.sol";
 
-contract VaultInvariantsTest is Test {
+contract VaultInvariantTest is Test {
     IERC20   asset;
     IVault   proxy;
     IVault   impl;
@@ -12,8 +12,8 @@ contract VaultInvariantsTest is Test {
         handler = new FlowsOther();
 
          // uncomment and fill to only call specific functions
-        bytes4[] memory selectors = new bytes4[](1);
-        selectors[0] = FlowsOther.setSsr.selector;
+        // bytes4[] memory selectors = new bytes4[](1);
+        // selectors[0] = FlowsOther.setSsr.selector;
         // selectors[1] = FlowsOther.warp.selector;3       // selectors[2] = FlowsOther.drip.selector;
         // selectors[3] = FlowsOther.deposit.selector;
         // selectors[4] = FlowsOther.mint.selector;
@@ -22,10 +22,10 @@ contract VaultInvariantsTest is Test {
         // selectors[7] = FlowsOther.redeem.selector;
         // selectors[8] = FlowsOther.redeemAll.selector;
 
-        targetSelector(FuzzSelector({
-            addr: address(handler),
-            selectors: selectors
-        }));
+        // targetSelector(FuzzSelector({
+        //     addr: address(handler),
+        //     selectors: selectors
+        // }));
 
         targetContract(address(handler)); // invariant tests should fuzz only handler functions
     }

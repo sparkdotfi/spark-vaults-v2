@@ -1,6 +1,7 @@
 import "./b_flows_erc4626.sol";
 
 contract FlowsOther is FlowsErc4626 {
+
     function setSsr(bool authFail, uint256 failCallerSeed, uint256 ssr) external {
         numCalls["setSsr"]++;
         ssr = bound(ssr, RAY, 1000000021979553151239153027); // between 0% and 100% apy
