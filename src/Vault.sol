@@ -49,7 +49,7 @@ contract Vault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, IVault {
 
     uint256 private constant RAY = 1e27;
 
-    bytes32 public constant SSR_ROLE   = keccak256("SSR_ROLE");
+    bytes32 public constant SETTER_ROLE   = keccak256("SETTER_ROLE");
     bytes32 public constant TAKER_ROLE = keccak256("TAKER_ROLE");
 
     bytes32 public constant PERMIT_TYPEHASH = keccak256(
@@ -115,7 +115,7 @@ contract Vault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, IVault {
     /*** Role-based external functions                                                          ***/
     /**********************************************************************************************/
 
-    function setSsr(uint256 data) external onlyRole(SSR_ROLE) {
+    function setSsr(uint256 data) external onlyRole(SETTER_ROLE) {
         require(data >= RAY, "Vault/wrong-ssr-value");
         drip();
         uint256 ssr_ = ssr;

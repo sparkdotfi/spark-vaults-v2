@@ -2,7 +2,8 @@
 
 pragma solidity 0.8.29;
 
-import { ERC20Mock } from "openzeppelin-contracts/mocks/token/ERC20Mock.sol";
+import { ERC20Mock } from "openzeppelin-contracts/contracts/mocks/token/ERC20Mock.sol";
+import { ERC1967Proxy } from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 import { Ethereum } from "spark-address-registry/Ethereum.sol";
 
@@ -39,7 +40,7 @@ library VaultDeploy {
         address asset, string memory name, string memory symbol
     ) internal returns (address proxy, address impl) {
         // On mainnet, admin is `SPARK_PROXY`.
-        address admin = Ethereum.SPARK_PROXY
+        address admin = Ethereum.SPARK_PROXY;
         (proxy, impl) = deploy(asset, name, symbol, admin); // Return params
     }
 
@@ -49,10 +50,10 @@ library VaultDeploy {
         address asset, string memory name, string memory symbol, address admin
     ) internal returns (address proxy, address impl) {
         // Deploy the implementation and proxy.
-        impl = address(new Vault(asset)); // Return param
+        impl = address(new Vault()); // Return param
         // Return param
-        proxy = address(new ERC1967Proxy(impl, abi.encodeCall(Vault.initialize, (name, symbol, admin))));
-
-        // TODO Set ssr-setter and taker.
+        proxy = address(new ERC1967Proxy(impl, abi.encodeCall(
+            Vault.initialize, (asset, name, symbol, admin)
+        )));
     }
 }
