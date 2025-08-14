@@ -26,7 +26,7 @@ contract VaultSetSsrBoundsFailureTests is VaultUnitTestBase {
         vault.setSsrBounds(1e27, FOUR_PCT_SSR);
     }
 
-    function test_setSsrBounds_aboveRayBoundary() public {
+    function test_setSsrBounds_aboveMaxSsrBoundary() public {
         vm.startPrank(admin);
         vm.expectRevert("Vault/ssr-too-high");
         vault.setSsrBounds(1e27, MAX_SSR + 1);
@@ -88,7 +88,7 @@ contract VaultSetSsrFailureTests is VaultUnitTestBase {
     function test_setSsr_aboveMaxSsrBoundary() public {
         vm.startPrank(setter);
         vm.expectRevert("Vault/ssr-too-high");
-        vault.setSsr(1e27 + 1);
+        vault.setSsr(1e27 + 1);  // Can't set SSR until admin sets bounds
 
         vault.setSsr(1e27);  // Max is 1e27 on deployment
 
