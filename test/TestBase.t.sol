@@ -21,7 +21,7 @@ contract VaultUnitTestBase is Test {
     MockERC20 usdc;
     Vault     vault;
 
-    function setUp() public {
+    function setUp() public virtual {
         usdc = new MockERC20();
 
         address vaultImpl = address(new Vault());

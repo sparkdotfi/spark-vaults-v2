@@ -25,6 +25,7 @@ interface IVault is IERC20Permit, IERC4626 {
     // Events
     event Drip(uint256 chi, uint256 diff);
     event Referral(uint16 indexed referral, address indexed owner, uint256 assets, uint256 shares);
+    event SsrBoundsSet(uint256 minSsr, uint256 maxSsr);
     event SsrSet(address indexed sender, uint256 oldSsr, uint256 newSsr);
     event Take(address indexed to, uint256 value);
 
