@@ -3,7 +3,7 @@ pragma solidity >=0.8.0;
 
 import "./TestBase.t.sol";
 
-contract VaultSetSsrFailureTests is VaultUnitTestBase {
+contract VaultSetSsrFailureTests is VaultTestBase {
 
     uint256 private constant MAX_SSR = 1.000000021979553151239153027e27;
 
@@ -34,7 +34,7 @@ contract VaultSetSsrFailureTests is VaultUnitTestBase {
 
 }
 
-contract VaultSetSsrSuccessTests is VaultUnitTestBase {
+contract VaultSetSsrSuccessTests is VaultTestBase {
 
     event Drip(uint256 nChi, uint256 diff);
     event SsrSet(address sender, uint256 oldSsr, uint256 newSsr);
@@ -69,7 +69,7 @@ contract VaultSetSsrSuccessTests is VaultUnitTestBase {
 
 }
 
-contract VaultTakeFailureTests is VaultUnitTestBase {
+contract VaultTakeFailureTests is VaultTestBase {
 
     function test_take_notTaker() public {
         vm.expectRevert(abi.encodeWithSignature(
@@ -81,7 +81,7 @@ contract VaultTakeFailureTests is VaultUnitTestBase {
     }
 
     function test_take_insufficientBalanceBoundary() public {
-        deal(address(usdc), address(vault), 1_000_000e6);
+        deal(address(asset), address(vault), 1_000_000e6);
 
         vm.startPrank(taker);
         vm.expectRevert();
@@ -92,19 +92,19 @@ contract VaultTakeFailureTests is VaultUnitTestBase {
 
 }
 
-contract VaultTakeSuccessTests is VaultUnitTestBase {
+contract VaultTakeSuccessTests is VaultTestBase {
 
     function test_take() public {
-        deal(address(usdc), address(vault), 1_000_000e6);
+        deal(address(asset), address(vault), 1_000_000e6);
 
-        assertEq(usdc.balanceOf(address(vault)), 1_000_000e6);
-        assertEq(usdc.balanceOf(taker),          0);
+        assertEq(asset.balanceOf(address(vault)), 1_000_000e6);
+        assertEq(asset.balanceOf(taker),          0);
 
         vm.prank(taker);
         vault.take(1_000_000e6);
 
-        assertEq(usdc.balanceOf(address(vault)), 0);
-        assertEq(usdc.balanceOf(taker),          1_000_000e6);
+        assertEq(asset.balanceOf(address(vault)), 0);
+        assertEq(asset.balanceOf(taker),          1_000_000e6);
     }
 
 }

@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity >=0.8.0;
 
-import { Test }      from "forge-std/Test.sol";
-import { MockERC20 } from "forge-std/mocks/MockERC20.sol";
+import { Test } from "forge-std/Test.sol";
 
-import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import { ERC20Mock as MockERC20 } from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
+import { ERC1967Proxy }           from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 import { Vault } from "../src/Vault.sol";
 
-contract VaultUnitTestBase is Test {
+contract VaultTestBase is Test {
 
     address admin  = makeAddr("admin");
     address setter = makeAddr("setter");
@@ -18,17 +18,21 @@ contract VaultUnitTestBase is Test {
     bytes32 SETTER_ROLE        = keccak256("SETTER_ROLE");
     bytes32 TAKER_ROLE         = keccak256("TAKER_ROLE");
 
-    MockERC20 usdc;
+    MockERC20 asset;
     Vault     vault;
 
-    function setUp() public {
-        usdc = new MockERC20();
+    function setUp() public virtual {
+        asset = new MockERC20();
 
-        address vaultImpl = address(new Vault());
-
-        vault = Vault(address(new ERC1967Proxy(vaultImpl, "")));
-
-        vault.initialize(address(usdc), "Spark Savings USDC V2", "spUSDC", admin);
+        vault = Vault(
+            address(new ERC1967Proxy(
+                address(new Vault()),
+                abi.encodeCall(
+                    Vault.initialize,
+                    (address(asset), "Spark Savings USDC V2", "spUSDC", admin)
+                )
+            ))
+        );
 
         vm.startPrank(admin);
         vault.grantRole(SETTER_ROLE, setter);

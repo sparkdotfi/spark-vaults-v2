@@ -1,63 +1,23 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// Copyright (C) 2021 Dai Foundation
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
-//
-// You should have received a copy of the GNU Affero General Public License
-// along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 pragma solidity 0.8.29;
 
-import { ERC4626Test, StdStorage, stdStorage, console2 as console } from "erc4626-tests/ERC4626.test.sol";
+import { ERC4626Test } from "erc4626-tests/ERC4626.test.sol";
 
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import { ERC20Mock    } from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 
 import { Vault } from "src/Vault.sol";
 
-contract VautERC4626Test is ERC4626Test {
+import { VaultTestBase } from "./TestBase.t.sol";
 
-    using stdStorage for StdStorage;
+contract VautERC4626Test is ERC4626Test, VaultTestBase {
 
-    Vault vault;
-    ERC20Mock asset;
+    // @note This cannot be part of VaultTestBase, because that is used in a contract where DssTest
+    // is also used (and that also defines RAY).
+    uint256 constant internal RAY = 1e27;
 
-    bytes32 constant DEFAULT_ADMIN_ROLE = 0x00;
-    bytes32 constant SETTER_ROLE        = keccak256("SETTER_ROLE");
-    bytes32 constant TAKER_ROLE         = keccak256("TAKER_ROLE");
-
-    address admin  = makeAddr("admin");
-    address setter = makeAddr("setter");
-    address taker  = makeAddr("taker");
-
-    uint256 constant private RAY = 10**27;
-
-    function setUp() public override {
-        // Set up the asset
-        asset = new ERC20Mock();
-        // Set up the vault
-        vault = Vault(
-            address(new ERC1967Proxy(
-                address(new Vault()),
-                abi.encodeCall(
-                    Vault.initialize,
-                    (address(asset), "Spark USDS", "spUSDS", admin)
-                )
-            ))
-        );
-
-        // Grant roles to setter and taker
-        vm.prank(admin); vault.grantRole(SETTER_ROLE, setter);
-        vm.prank(admin); vault.grantRole(TAKER_ROLE,  taker);
+    function setUp() public override( ERC4626Test, VaultTestBase ) {
+        super.setUp();
 
         // Set ssr, warp time and drip
         vm.prank(setter); vault.setSsr(1000000001547125957863212448);
@@ -79,8 +39,8 @@ contract VautERC4626Test is ERC4626Test {
     function setUpVault(Init memory init) public override {
         // Make assumptions about init
         for (uint256 i = 0; i < N; i++) {
-            init.share[i] %= 1_000_000_000 ether;
-            init.asset[i] %= 1_000_000_000 ether;
+            init.share[i] = _bound(init.share[i], 0, 1_000_000_000 ether - 1);
+            init.share[i] = _bound(init.asset[i], 0, 1_000_000_000 ether - 1);
             vm.assume(init.user[i] != address(0) && init.user[i] != address(vault));
         }
         // Call the parent to set up the vault
@@ -90,7 +50,7 @@ contract VautERC4626Test is ERC4626Test {
     // setup initial yield
     function setUpYield(Init memory init) public override {
         vm.assume(init.yield >= 0);
-        init.yield %= 1_000_000_000 ether;
+        init.yield = _bound(init.yield, 0, 1_000_000_000 ether - 1);
         uint256 gain = uint256(init.yield);
 
         uint256 supply = vault.totalSupply();
