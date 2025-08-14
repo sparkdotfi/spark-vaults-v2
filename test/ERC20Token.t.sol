@@ -36,10 +36,17 @@ contract ERC20TokenTests is VaultUnitTestBase, TokenFuzzChecks {
         checkBulkPermit(address(vault), "Vault");
     }
 
-    function testPermitFuzz(uint256 amount, uint256 deadline, uint256 nonce, uint128 privateKey) public {
-        amount     = bound(amount,     0,                1e36);
-        deadline   = bound(deadline,   block.timestamp, block.timestamp + 100 days);
-        nonce      = bound(nonce,      0,               type(uint256).max);
+    function testPermitFuzz(
+        uint256 amount,
+        uint256 deadline,
+        uint256 nonce,
+        uint128 privateKey
+    )
+        public
+    {
+        amount     = bound(amount,   0,               1e36);
+        deadline   = bound(deadline, block.timestamp, block.timestamp + 100 days);
+        nonce      = bound(nonce,    0,               type(uint256).max);
 
         checkBulkPermitFuzz({
             _token        : address(vault),

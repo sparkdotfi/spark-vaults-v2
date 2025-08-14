@@ -13,7 +13,7 @@ contract VaultSetSsrFailureTests is VaultUnitTestBase {
             address(this),
             SETTER_ROLE
         ));
-        vault.setSsr(100);
+        vault.setSsr(1e27);
     }
 
     function test_setSsr_belowRayBoundary() public {
@@ -31,12 +31,13 @@ contract VaultSetSsrFailureTests is VaultUnitTestBase {
 
         vault.setSsr(MAX_SSR);
     }
+
 }
 
 contract VaultSetSsrSuccessTests is VaultUnitTestBase {
 
-    event SsrSet(address sender, uint256 oldSsr, uint256 newSsr);
     event Drip(uint256 nChi, uint256 diff);
+    event SsrSet(address sender, uint256 oldSsr, uint256 newSsr);
 
     function test_setSsr() public {
         uint256 deployTimestamp = block.timestamp;
