@@ -118,10 +118,10 @@ contract VaultTakeFailureTests is VaultUnitTestBase {
         deal(address(usdc), address(vault), 1_000_000e6);
 
         vm.startPrank(taker);
-        vm.expectRevert("Vault/insufficient-balance");
-        vault.take(1_000_000e6);
+        vm.expectRevert();
+        vault.take(1_000_000e6 + 1);
 
-        // vault.take(0);
+        vault.take(1_000_000e6);
     }
 
 }
@@ -129,7 +129,16 @@ contract VaultTakeFailureTests is VaultUnitTestBase {
 contract VaultTakeSuccessTests is VaultUnitTestBase {
 
     function test_take() public {
+        deal(address(usdc), address(vault), 1_000_000e6);
+
+        assertEq(usdc.balanceOf(address(vault)), 1_000_000e6);
+        assertEq(usdc.balanceOf(taker),          0);
+
         vm.prank(taker);
-        vault.take(100);
+        vault.take(1_000_000e6);
+
+        assertEq(usdc.balanceOf(address(vault)), 0);
+        assertEq(usdc.balanceOf(taker),          1_000_000e6);
     }
+
 }
