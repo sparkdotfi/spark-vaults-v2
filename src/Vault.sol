@@ -47,10 +47,13 @@ contract Vault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, IVault {
     /*** Constants                                                                              ***/
     /**********************************************************************************************/
 
-    uint256 private constant RAY = 1e27;
+    // This corresponds to a 100% APY, verify here:
+    // bc -l <<< 'scale=27; e( l(2)/(60 * 60 * 24 * 365) )'
+    uint256 private constant MAX_SSR = 1.000000021979553151239153027e27;
+    uint256 private constant RAY     = 1e27;
 
     bytes32 public constant SETTER_ROLE = keccak256("SETTER_ROLE");
-    bytes32 public constant TAKER_ROLE = keccak256("TAKER_ROLE");
+    bytes32 public constant TAKER_ROLE  = keccak256("TAKER_ROLE");
 
     bytes32 public constant PERMIT_TYPEHASH = keccak256(
         "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
@@ -116,7 +119,8 @@ contract Vault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, IVault {
     /**********************************************************************************************/
 
     function setSsr(uint256 data) external onlyRole(SETTER_ROLE) {
-        require(data >= RAY, "Vault/wrong-ssr-value");
+        require(data >= RAY,     "Vault/ssr-too-low");
+        require(data <= MAX_SSR, "Vault/ssr-too-high");
         drip();
         uint256 ssr_ = ssr;
         ssr = data;
