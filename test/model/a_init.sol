@@ -1,4 +1,4 @@
-import { StdUtils, StdCheats, Vm, Test, console, stdError } from "forge-std/Test.sol";
+import { StdUtils, StdCheats, Vm, Test, console2 as console, stdError } from "forge-std/Test.sol";
 import { StdInvariant } from "forge-std/StdInvariant.sol";
 
 import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
@@ -56,17 +56,4 @@ contract Init is StdUtils, StdCheats {
             users[i - 4] = vm.addr(i);
         }
     }
-
-
-    // function warp(uint256 secs) external {
-    //     numCalls["warp"]++;
-    //     secs = bound(secs, 0, 365 days);
-    //     vm.warp(block.timestamp + secs);
-    // }
-    //
-    // function drip() external {
-    //     numCalls["drip"]++;
-    //     proxy.drip();
-    // }
-    //
 }

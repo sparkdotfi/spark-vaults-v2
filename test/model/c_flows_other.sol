@@ -26,4 +26,15 @@ contract FlowsOther is FlowsErc4626 {
         }
         vm.prank(setter); proxy.setSsr(ssr);
     }
+
+    // function warp(uint256 secs) external {
+    //     numCalls["warp"]++;
+    //     secs = bound(secs, 0, 365 days);
+    //     vm.warp(block.timestamp + secs);
+    // }
+
+    // function drip() external {
+    //     numCalls["drip"]++;
+    //     proxy.drip();
+    // }
 }

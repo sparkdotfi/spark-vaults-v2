@@ -7,6 +7,7 @@ contract VaultInvariantTest is Test {
     IVault   proxy;
     IVault   impl;
     FlowsOther handler;
+    uint256 invariantsRun; // = 0
 
     function setUp() public {
         handler = new FlowsOther();
@@ -29,8 +30,14 @@ contract VaultInvariantTest is Test {
 
         targetContract(address(handler)); // invariant tests should fuzz only handler functions
     }
+    function invariants() public {
+        invariantsRun++;
+        console.log("=== Invariants run:", invariantsRun);
+        _invariant_usds_balance_vs_redeemable();
+        _invariant_call_summary();
+    }
 
-    function invariant_usds_balance_vs_redeemable() external view {
+    function _invariant_usds_balance_vs_redeemable() internal view {
         // for only setSsr, warp, drip
         // assertEq(usds.balanceOf(address(proxy)), proxy.totalSupply() * proxy.chi() / RAY);
 
@@ -38,7 +45,7 @@ contract VaultInvariantTest is Test {
         // assertGe(usds.balanceOf(address(proxy)), proxy.totalSupply() * proxy.chi() / RAY);
     }
 
-    function invariant_call_summary() private view { // make external to enable
+    function _invariant_call_summary() internal view { // make external to enable
         console.log("------------------");
 
         console.log("\nCall Summary\n");
