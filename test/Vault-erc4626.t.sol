@@ -44,6 +44,7 @@ contract VautERC4626Test is ERC4626Test {
     function setUp() public override {
         // Set up the asset
         asset = new ERC20Mock();
+        // Set up the vault
         vault = Vault(
             address(new ERC1967Proxy(
                 address(new Vault()),
@@ -54,30 +55,35 @@ contract VautERC4626Test is ERC4626Test {
             ))
         );
 
+        // Grant roles to setter and taker
         vm.prank(admin); vault.grantRole(SETTER_ROLE, setter);
-        vm.prank(admin); vault.grantRole(TAKER_ROLE, taker);
+        vm.prank(admin); vault.grantRole(TAKER_ROLE,  taker);
 
+        // Set ssr, warp time and drip
         vm.prank(setter); vault.setSsr(1000000001547125957863212448);
         vm.warp(100 days);
         vault.drip();
 
+        // chi should increase
         assertGt(vault.chi(), RAY);
 
-        _underlying_ = address(asset);
-        _vault_ = address(vault);
-        _delta_ = 0;
+        // Initialize the ERC4626 test
+        _underlying_     = address(asset);
+        _vault_          = address(vault);
+        _delta_          = 0;
         _vaultMayBeEmpty = true;
         _unlimitedAmount = false;
     }
 
     // setup initial vault state
     function setUpVault(Init memory init) public override {
+        // Make assumptions about init
         for (uint256 i = 0; i < N; i++) {
-            console.log("A");
             init.share[i] %= 1_000_000_000 ether;
             init.asset[i] %= 1_000_000_000 ether;
             vm.assume(init.user[i] != address(0) && init.user[i] != address(vault));
         }
+        // Call the parent to set up the vault
         super.setUpVault(init);
     }
 
@@ -88,10 +94,12 @@ contract VautERC4626Test is ERC4626Test {
         uint256 gain = uint256(init.yield);
 
         uint256 supply = vault.totalSupply();
+
         if (supply > 0) {
             uint256 nChi = gain * RAY / supply + vault.chi();
-            // uint256 chiRho = (block.timestamp << 192) + nChi;
             uint256 chiRho = (nChi << 64) + block.timestamp;
+            // Directly store chi and rho in storage
+            // They are currently packed together at slot #3 in storage
             vm.store(
                 address(vault),
                 bytes32(uint256(3)),
