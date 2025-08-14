@@ -51,4 +51,5 @@ contract ERC20TokenTests is VaultUnitTestBase, TokenFuzzChecks {
             nonce         : nonce
         });
     }
+
 }
