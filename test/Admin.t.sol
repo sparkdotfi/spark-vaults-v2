@@ -102,3 +102,34 @@ contract VaultSetSsrSuccessTests is VaultUnitTestBase {
     }
 
 }
+
+contract VaultTakeFailureTests is VaultUnitTestBase {
+
+    function test_take_notTaker() public {
+        vm.expectRevert(abi.encodeWithSignature(
+            "AccessControlUnauthorizedAccount(address,bytes32)",
+            address(this),
+            TAKER_ROLE
+        ));
+        vault.take(1_000_000e6);
+    }
+
+    function test_take_insufficientBalanceBoundary() public {
+        deal(address(usdc), address(vault), 1_000_000e6);
+
+        vm.startPrank(taker);
+        vm.expectRevert("Vault/insufficient-balance");
+        vault.take(1_000_000e6);
+
+        // vault.take(0);
+    }
+
+}
+
+contract VaultTakeSuccessTests is VaultUnitTestBase {
+
+    function test_take() public {
+        vm.prank(taker);
+        vault.take(100);
+    }
+}
