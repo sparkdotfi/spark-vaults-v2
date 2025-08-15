@@ -321,11 +321,6 @@ contract Vault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, IVault {
     /*** ERC4626 external view functions                                                        ***/
     /**********************************************************************************************/
 
-    // NOTE: Not part of the ERC4626 standard but added for convenience
-    function assetsOf(address owner) public view returns (uint256) {
-        return convertToAssets(balanceOf[owner]);
-    }
-
     function convertToAssets(uint256 shares) public view returns (uint256) {
         return shares * nowChi() / RAY;
     }
@@ -368,8 +363,24 @@ contract Vault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, IVault {
         return _divup(assets * RAY, nowChi());
     }
 
-    function totalAssets() external view returns (uint256) {
+    function totalAssets() public view returns (uint256) {
         return convertToAssets(totalSupply);
+    }
+
+    /**********************************************************************************************/
+    /*** Convenience view functions                                                             ***/
+    /**********************************************************************************************/
+
+    function assetsOf(address owner) public view returns (uint256) {
+        return convertToAssets(balanceOf[owner]);
+    }
+
+    function assetsOutstanding() public view returns (uint256) {
+        return totalAssets() - IERC20(asset).balanceOf(address(this));
+    }
+
+    function nowChi() public view returns (uint256) {
+        return (block.timestamp > rho) ? _rpow(ssr, block.timestamp - rho) * chi / RAY : chi;
     }
 
     /**********************************************************************************************/
@@ -511,10 +522,6 @@ contract Vault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, IVault {
                 }
             }
         }
-    }
-
-    function nowChi() public view returns (uint256) {
-        return (block.timestamp > rho) ? _rpow(ssr, block.timestamp - rho) * chi / RAY : chi;
     }
 
 }
