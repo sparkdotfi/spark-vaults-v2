@@ -7,6 +7,13 @@ import "./TestBase.t.sol";
 
 contract ERC20TokenTests is VaultUnitTestBase, TokenFuzzChecks {
 
+    function setUp() public override {
+        super.setUp();
+        vm.startPrank(admin);
+        vault.setSsrBounds(1e27, vault.MAX_SSR());
+        vm.stopPrank();
+    }
+
     function testERC20() public {
         checkBulkERC20(address(vault), "Vault", "Spark Savings USDC V2", "spUSDC", "1", 18);
     }
