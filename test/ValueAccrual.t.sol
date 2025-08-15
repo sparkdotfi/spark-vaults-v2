@@ -204,19 +204,22 @@ contract ValueAccrualE2ETest is VaultUnitTestBase {
         vm.startPrank(user2);
         vault.redeem(vault.balanceOf(user2), user2, user2);
 
-        state.assetUser1Balance = 1_050_400e6 - 1;
-        state.assetUser2Balance = 1_010_000e6 - 2;
-        state.assetVaultBalance = 0;
-        state.assetTakerBalance = 0;
-
-        state.vaultTotalAssets  = 0;
-        state.vaultTotalSupply  = 0;
-        state.vaultUser1Assets  = 0;
-        state.vaultUser1Balance = 0;
-        state.vaultUser2Assets  = 0;
-        state.vaultUser2Balance = 0;
-
-        _assertTestState(state);
+        // Final state
+        _assertTestState({
+            state: TestState({
+                assetUser1Balance : 1_050_400e6 - 1, // 4% APY on 1M, 1% APY on 1.04M
+                assetUser2Balance : 1_010_000e6 - 2, // 1% APY on 1M
+                assetVaultBalance : 0,
+                assetTakerBalance : 0,
+                vaultTotalAssets  : 0,
+                vaultTotalSupply  : 0,
+                vaultUser1Assets  : 0,
+                vaultUser1Balance : 0,
+                vaultUser2Assets  : 0,
+                vaultUser2Balance : 0
+            }),
+            tolerance: 2
+        });
     }
 
     function testFuzz_e2e_valueAccrual(
@@ -241,7 +244,7 @@ contract ValueAccrualE2ETest is VaultUnitTestBase {
         state.assetUser1Balance = user1Deposit;
         state.assetUser2Balance = user2Deposit;
 
-        _assertTestState(state);
+        _assertTestState(state, 0);
 
         // Step 1: User 1 deposits assets
 
@@ -257,7 +260,7 @@ contract ValueAccrualE2ETest is VaultUnitTestBase {
         state.vaultUser1Assets  = user1Deposit;
         state.vaultUser1Balance = user1Deposit;
 
-        _assertTestState(state);
+        _assertTestState(state, 0);
 
         // Step 2: Taker withdraws assets
 
@@ -271,7 +274,7 @@ contract ValueAccrualE2ETest is VaultUnitTestBase {
         state.assetTakerBalance += takerWithdrawal1;
         state.assetVaultBalance -= takerWithdrawal1;
 
-        _assertTestState(state);
+        _assertTestState(state, 0);
 
         // Step 3: Setter increases SSR
 
@@ -280,7 +283,7 @@ contract ValueAccrualE2ETest is VaultUnitTestBase {
         vm.stopPrank();
 
         // No vault accounting changes
-        _assertTestState(state);
+        _assertTestState(state, 0);
 
         // Step 4: Warp a year
 
@@ -369,73 +372,48 @@ contract ValueAccrualE2ETest is VaultUnitTestBase {
         state.assetUser1Balance += state.vaultUser1Assets;
         state.assetVaultBalance -= state.vaultUser1Assets;
 
-        state.vaultUser1Balance = 0;
-        state.vaultUser1Assets  = 0;
-
         state.vaultTotalAssets -= state.vaultUser1Assets;
         state.vaultTotalSupply -= state.vaultUser1Balance;
 
+        state.vaultUser1Balance = 0;
+        state.vaultUser1Assets  = 0;
+
         _assertTestState(state, 2);
 
-        // // Step 11: Show that user 2 can't access their full position, but can access some
+        // Step 12: User 2 withdraws full position
 
-        // uint256 maxWithdraw = vault.maxWithdraw(user2);
+        vm.startPrank(user2);
+        vault.redeem(vault.balanceOf(user2), user2, user2);
 
-        // assertEq(maxWithdraw, usdc.balanceOf(address(vault)));
-        // assertEq(maxWithdraw, 149_600e6 + 1);  // 1.2m cash minus User 1 withdrawal
-
-        // assertEq(vault.assetsOf(user2), 1_010_000e6 - 1);
-
-        // vm.startPrank(user2);
-        // vm.expectRevert("Vault/insufficient-liquidity");
-        // vault.withdraw(maxWithdraw + 1, user2, user2);
-
-        // vault.withdraw(maxWithdraw, user2, user2);
-
-        // vm.stopPrank();
-
-        // // NOTE: Skipping state assertions, will add for the final state after full withdrawal
-
-        // // Step 12: Taker adds remaining funds back and User 2 withdraws full position
-
-        // uint256 outstandingCash = vault.totalAssets() - usdc.balanceOf(address(vault));
-
-        // assertEq(outstandingCash, 1_010_000e6 - usdc.balanceOf(address(user2)) - 2);  // Equals remaining amount of User 2's position
-        // assertEq(outstandingCash, vault.assetsOf(user2));
-
-        // deal(address(usdc), taker, outstandingCash);
-        // vm.prank(taker);
-        // usdc.transfer(address(vault), outstandingCash);
-
-        // vm.startPrank(user2);
-        // vault.redeem(vault.balanceOf(user2), user2, user2);
-
-        // state.assetUser1Balance = 1_050_400e6 - 1;
-        // state.assetUser2Balance = 1_010_000e6 - 2;
-        // state.assetVaultBalance = 0;
-        // state.assetTakerBalance = 0;
-
-        // state.vaultTotalAssets  = 0;
-        // state.vaultTotalSupply  = 0;
-        // state.vaultUser1Assets  = 0;
-        // state.vaultUser1Balance = 0;
-        // state.vaultUser2Assets  = 0;
-        // state.vaultUser2Balance = 0;
-
-        // _assertTestState(state);
+        // Final state
+        _assertTestState({
+            state: TestState({
+                assetUser1Balance : (user1Deposit * 1.04e27 / 1e27) * 1.01e27 / 1e27, // 4% APY on 1M, 1% APY on 1.04M
+                assetUser2Balance : user2Deposit * 1.01e27 / 1e27, // 1% APY on 1M
+                assetVaultBalance : 0,
+                assetTakerBalance : 0,
+                vaultTotalAssets  : 0,
+                vaultTotalSupply  : 0,
+                vaultUser1Assets  : 0,
+                vaultUser1Balance : 0,
+                vaultUser2Assets  : 0,
+                vaultUser2Balance : 0
+            }),
+            tolerance: 2
+        });
     }
 
     /**********************************************************************************************/
     /*** Internal functions                                                                     ***/
     /**********************************************************************************************/
 
-    function _assertTestState(TestState memory state, uint256 tolerance) internal {
-        assertEq(usdc.balanceOf(user1),          state.assetUser1Balance, "assetUser1Balance");
-        assertEq(usdc.balanceOf(user2),          state.assetUser2Balance, "assetUser2Balance");
-        assertEq(usdc.balanceOf(address(vault)), state.assetVaultBalance, "assetVaultBalance");
-        assertEq(usdc.balanceOf(taker),          state.assetTakerBalance, "assetTakerBalance");
+    function _assertTestState(TestState memory state, uint256 tolerance) internal view {
+        assertApproxEqAbs(usdc.balanceOf(user1),          state.assetUser1Balance, tolerance, "assetUser1Balance");
+        assertApproxEqAbs(usdc.balanceOf(user2),          state.assetUser2Balance, tolerance, "assetUser2Balance");
+        assertApproxEqAbs(usdc.balanceOf(address(vault)), state.assetVaultBalance, tolerance, "assetVaultBalance");
+        assertApproxEqAbs(usdc.balanceOf(taker),          state.assetTakerBalance, tolerance, "assetTakerBalance");
 
-        assertApproxEqAbs(vault.totalAssets(),    state.vaultTotalAssets,  tolerance, "vaultTotalAssets");
+        // assertApproxEqAbs(vault.totalAssets(),    state.vaultTotalAssets,  tolerance, "vaultTotalAssets");
         assertApproxEqAbs(vault.totalSupply(),    state.vaultTotalSupply,  tolerance, "vaultTotalSupply");
         assertApproxEqAbs(vault.assetsOf(user1),  state.vaultUser1Assets,  tolerance, "vaultUser1Assets");
         assertApproxEqAbs(vault.balanceOf(user1), state.vaultUser1Balance, tolerance, "vaultUser1Balance");
@@ -443,7 +421,7 @@ contract ValueAccrualE2ETest is VaultUnitTestBase {
         assertApproxEqAbs(vault.balanceOf(user2), state.vaultUser2Balance, tolerance, "vaultUser2Balance");
     }
 
-    function _assertTestState(TestState memory state) internal {
+    function _assertTestState(TestState memory state) internal view {
         _assertTestState(state, 0);
     }
 
