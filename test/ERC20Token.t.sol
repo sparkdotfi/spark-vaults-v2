@@ -5,7 +5,7 @@ import { TokenFuzzChecks } from "lib/token-tests/src/TokenFuzzChecks.sol";
 
 import "./TestBase.t.sol";
 
-contract ERC20TokenTests is VaultUnitTestBase, TokenFuzzChecks {
+contract ERC20TokenTests is VaultTestBase, TokenFuzzChecks {
 
     function setUp() public override {
         super.setUp();
