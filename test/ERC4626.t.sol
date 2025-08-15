@@ -15,8 +15,15 @@ contract VaultERC4626Test is ERC4626Test, VaultTestBase {
     // is also used (and that also defines RAY).
     uint256 constant internal RAY = 1e27;
 
-    function setUp() public override( ERC4626Test, VaultTestBase ) {
+    function setUp() public override(ERC4626Test, VaultTestBase) {
         super.setUp();
+
+        vm.startPrank(admin);
+        vault.setSsrBounds(
+            1e27, // minSsr
+            vault.MAX_SSR() // maxSsr
+        );
+        vm.stopPrank();
 
         // >> Set ssr, warp time and drip
         vm.prank(setter);
@@ -38,7 +45,7 @@ contract VaultERC4626Test is ERC4626Test, VaultTestBase {
         _unlimitedAmount = false;
     }
 
-    // Setup initial vault state
+    // Set up initial vault state
     function setUpVault(Init memory init) public override {
         // Make assumptions about init
         for (uint256 i = 0; i < N; i++) {
@@ -50,16 +57,15 @@ contract VaultERC4626Test is ERC4626Test, VaultTestBase {
         super.setUpVault(init);
     }
 
-    // Setup initial yield
+    // Set up initial yield
     function setUpYield(Init memory init) public override {
         vm.assume(init.yield >= 0);
         init.yield = _bound(init.yield, 0, 1_000_000_000e18 - 1);
-        uint256 gain = uint256(init.yield);
 
         uint256 supply = vault.totalSupply();
 
         if (supply > 0) {
-            uint256 newChi = gain * RAY / supply + vault.chi();
+            uint256 newChi = vault.chi() + uint256(init.yield) * RAY / supply;
             uint256 chiRho = (newChi << 64) + block.timestamp;
             // Directly store chi and rho in storage
             // They are currently packed together at slot #3 in storage

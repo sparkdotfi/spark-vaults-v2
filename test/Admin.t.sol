@@ -36,7 +36,7 @@ contract VaultSetSsrBoundsFailureTests is VaultTestBase {
 
 }
 
-contract VaultSetSsrBoundsSuccessTests is VaultUnitTestBase {
+contract VaultSetSsrBoundsSuccessTests is VaultTestBase {
 
     event SsrBoundsSet(uint256 oldMinSsr, uint256 oldMaxSsr, uint256 newMinSsr, uint256 newMaxSsr);
 
@@ -55,7 +55,7 @@ contract VaultSetSsrBoundsSuccessTests is VaultUnitTestBase {
 
 }
 
-contract VaultSetSsrFailureTests is VaultUnitTestBase {
+contract VaultSetSsrFailureTests is VaultTestBase {
 
     function test_setSsr_notSetter() public {
         vm.expectRevert(abi.encodeWithSignature(
