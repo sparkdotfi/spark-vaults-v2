@@ -222,6 +222,8 @@ contract ValueAccrualE2ETest is VaultUnitTestBase {
         });
     }
 
+    /// forge-config: default.fuzz.runs = 2500
+    /// forge-config: ci.fuzz.runs = 500000
     function testFuzz_e2e_valueAccrual(
         uint256 user1Deposit,
         uint256 user2Deposit,
