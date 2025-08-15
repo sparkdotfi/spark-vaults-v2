@@ -49,8 +49,8 @@ contract Vault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, IVault {
 
     // This corresponds to a 100% APY, verify here:
     // bc -l <<< 'scale=27; e( l(2)/(60 * 60 * 24 * 365) )'
-    uint256 private constant MAX_SSR = 1.000000021979553151239153027e27;
-    uint256 private constant RAY     = 1e27;
+    uint256 public constant MAX_SSR = 1.000000021979553151239153027e27;
+    uint256 public constant RAY     = 1e27;
 
     bytes32 public constant SETTER_ROLE = keccak256("SETTER_ROLE");
     bytes32 public constant TAKER_ROLE  = keccak256("TAKER_ROLE");
@@ -72,9 +72,11 @@ contract Vault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, IVault {
     string public name;
     string public symbol;
 
-    uint64  public rho;  // Time of last drip     [unix epoch time]
-    uint192 public chi;  // The Rate Accumulator  [ray]
-    uint256 public ssr;  // The Spark Savings Rate [ray]
+    uint64  public rho;    // Time of last drip      [unix epoch time]
+    uint192 public chi;    // The Rate Accumulator   [ray]
+    uint256 public ssr;    // The Spark Savings Rate [ray]
+    uint256 public minSsr; // The minimum Spark Savings Rate [ray]
+    uint256 public maxSsr; // The maximum Spark Savings Rate [ray]
 
     uint256 public totalSupply;
 
@@ -105,6 +107,9 @@ contract Vault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, IVault {
         chi = uint192(RAY);
         rho = uint64(block.timestamp);
         ssr = RAY;
+
+        minSsr = RAY;
+        maxSsr = RAY;
     }
 
     function _authorizeUpgrade(address newImplementation)
@@ -118,12 +123,24 @@ contract Vault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, IVault {
     /*** Role-based external functions                                                          ***/
     /**********************************************************************************************/
 
+    function setSsrBounds(uint256 minSsr_, uint256 maxSsr_) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(minSsr_ >= RAY,     "Vault/ssr-too-low");
+        require(maxSsr_ <= MAX_SSR, "Vault/ssr-too-high");
+
+        emit SsrBoundsSet(minSsr, maxSsr, minSsr_, maxSsr_);
+
+        minSsr = minSsr_;
+        maxSsr = maxSsr_;
+    }
+
     function setSsr(uint256 data) external onlyRole(SETTER_ROLE) {
-        require(data >= RAY,     "Vault/ssr-too-low");
-        require(data <= MAX_SSR, "Vault/ssr-too-high");
+        require(data >= minSsr, "Vault/ssr-too-low");
+        require(data <= maxSsr, "Vault/ssr-too-high");
+
         drip();
         uint256 ssr_ = ssr;
         ssr = data;
+
         emit SsrSet(msg.sender, ssr_, data);
     }
 

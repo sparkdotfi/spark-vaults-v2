@@ -3,9 +3,59 @@ pragma solidity >=0.8.0;
 
 import "./TestBase.t.sol";
 
-contract VaultSetSsrFailureTests is VaultTestBase {
+uint256 constant ONE_PCT_SSR  = 1.000000000315522921573372069e27;
+uint256 constant FOUR_PCT_SSR = 1.000000001243680656318820312e27;
+uint256 constant MAX_SSR      = 1.000000021979553151239153027e27;
 
-    uint256 private constant MAX_SSR = 1.000000021979553151239153027e27;
+contract VaultSetSsrBoundsFailureTests is VaultTestBase {
+
+    function test_setSsrBounds_notAdmin() public {
+        vm.expectRevert(abi.encodeWithSignature(
+            "AccessControlUnauthorizedAccount(address,bytes32)",
+            address(this),
+            DEFAULT_ADMIN_ROLE
+        ));
+        vault.setSsrBounds(1e27, FOUR_PCT_SSR);
+    }
+
+    function test_setSsrBounds_belowRayBoundary() public {
+        vm.startPrank(admin);
+        vm.expectRevert("Vault/ssr-too-low");
+        vault.setSsrBounds(1e27 - 1, FOUR_PCT_SSR);
+
+        vault.setSsrBounds(1e27, FOUR_PCT_SSR);
+    }
+
+    function test_setSsrBounds_aboveMaxSsrBoundary() public {
+        vm.startPrank(admin);
+        vm.expectRevert("Vault/ssr-too-high");
+        vault.setSsrBounds(1e27, MAX_SSR + 1);
+
+        vault.setSsrBounds(1e27, MAX_SSR);
+    }
+
+}
+
+contract VaultSetSsrBoundsSuccessTests is VaultUnitTestBase {
+
+    event SsrBoundsSet(uint256 oldMinSsr, uint256 oldMaxSsr, uint256 newMinSsr, uint256 newMaxSsr);
+
+    function test_setSsrBounds() public {
+        assertEq(vault.minSsr(), 1e27);
+        assertEq(vault.maxSsr(), 1e27);
+
+        vm.startPrank(admin);
+        vm.expectEmit(address(vault));
+        emit SsrBoundsSet(1e27, 1e27, ONE_PCT_SSR, FOUR_PCT_SSR);
+        vault.setSsrBounds(ONE_PCT_SSR, FOUR_PCT_SSR);
+
+        assertEq(vault.minSsr(), ONE_PCT_SSR);
+        assertEq(vault.maxSsr(), FOUR_PCT_SSR);
+    }
+
+}
+
+contract VaultSetSsrFailureTests is VaultUnitTestBase {
 
     function test_setSsr_notSetter() public {
         vm.expectRevert(abi.encodeWithSignature(
@@ -13,23 +63,45 @@ contract VaultSetSsrFailureTests is VaultTestBase {
             address(this),
             SETTER_ROLE
         ));
-        vault.setSsr(1e27);
+        vault.setSsr(ONE_PCT_SSR);
     }
 
-    function test_setSsr_belowRayBoundary() public {
+    function test_setSsr_belowMinSsrBoundary() public {
         vm.startPrank(setter);
         vm.expectRevert("Vault/ssr-too-low");
         vault.setSsr(1e27 - 1);
 
-        vault.setSsr(1e27);
+        vault.setSsr(1e27);  // Min is 1e27 on deployment
+
+        vm.stopPrank();
+
+        vm.prank(admin);
+        vault.setSsrBounds(ONE_PCT_SSR, FOUR_PCT_SSR);
+
+        vm.startPrank(setter);
+        vm.expectRevert("Vault/ssr-too-low");
+        vault.setSsr(ONE_PCT_SSR - 1);
+
+        vault.setSsr(ONE_PCT_SSR);
     }
 
-    function test_setSsr_aboveRayBoundary() public {
+    function test_setSsr_aboveMaxSsrBoundary() public {
         vm.startPrank(setter);
         vm.expectRevert("Vault/ssr-too-high");
-        vault.setSsr(MAX_SSR + 1);
+        vault.setSsr(1e27 + 1);  // Can't set SSR until admin sets bounds
 
-        vault.setSsr(MAX_SSR);
+        vault.setSsr(1e27);  // Max is 1e27 on deployment
+
+        vm.stopPrank();
+
+        vm.prank(admin);
+        vault.setSsrBounds(ONE_PCT_SSR, FOUR_PCT_SSR);
+
+        vm.startPrank(setter);
+        vm.expectRevert("Vault/ssr-too-high");
+        vault.setSsr(FOUR_PCT_SSR + 1);
+
+        vault.setSsr(FOUR_PCT_SSR);
     }
 
 }
@@ -39,10 +111,14 @@ contract VaultSetSsrSuccessTests is VaultTestBase {
     event Drip(uint256 nChi, uint256 diff);
     event SsrSet(address sender, uint256 oldSsr, uint256 newSsr);
 
+    function setUp() public override {
+        super.setUp();
+        vm.prank(admin);
+        vault.setSsrBounds(1e27, FOUR_PCT_SSR);
+    }
+
     function test_setSsr() public {
         uint256 deployTimestamp = block.timestamp;
-
-        uint256 newSsr = 1.000000001e27;
 
         skip(10 days);
 
@@ -53,12 +129,12 @@ contract VaultSetSsrSuccessTests is VaultTestBase {
         vm.prank(setter);
         vm.expectEmit(address(vault));
         emit Drip(1e27, 0);
-        emit SsrSet(setter, 1e27, newSsr);
-        vault.setSsr(newSsr);
+        emit SsrSet(setter, 1e27, FOUR_PCT_SSR);
+        vault.setSsr(FOUR_PCT_SSR);
 
         assertEq(uint256(vault.chi()), 1e27);
         assertEq(uint256(vault.rho()), block.timestamp);
-        assertEq(uint256(vault.ssr()), newSsr);
+        assertEq(uint256(vault.ssr()), FOUR_PCT_SSR);
 
         assertEq(vault.nowChi(), 1e27);
 
