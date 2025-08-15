@@ -321,8 +321,9 @@ contract Vault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, IVault {
     /*** ERC4626 external view functions                                                        ***/
     /**********************************************************************************************/
 
-    function totalAssets() external view returns (uint256) {
-        return convertToAssets(totalSupply);
+    // NOTE: Not part of the ERC4626 standard but added for convenience
+    function assetsOf(address owner) public view returns (uint256) {
+        return convertToAssets(balanceOf[owner]);
     }
 
     function convertToAssets(uint256 shares) public view returns (uint256) {
@@ -346,7 +347,9 @@ contract Vault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, IVault {
     }
 
     function maxWithdraw(address owner) external view returns (uint256) {
-        return convertToAssets(balanceOf[owner]);
+        uint256 liquidity  = IERC20(asset).balanceOf(address(this));
+        uint256 userAssets = assetsOf(owner);
+        return liquidity > userAssets ? userAssets : liquidity;
     }
 
     function previewDeposit(uint256 assets) external view returns (uint256) {
@@ -363,6 +366,10 @@ contract Vault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, IVault {
 
     function previewWithdraw(uint256 assets) external view returns (uint256) {
         return _divup(assets * RAY, nowChi());
+    }
+
+    function totalAssets() external view returns (uint256) {
+        return convertToAssets(totalSupply);
     }
 
     /**********************************************************************************************/
@@ -418,6 +425,7 @@ contract Vault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, IVault {
     }
 
     function _pushAsset(address to, uint256 value) internal {
+        require(value <= IERC20(asset).balanceOf(address(this)), "Vault/insufficient-liquidity");
         SafeERC20.safeTransfer(IERC20(asset), to, value);
     }
 

@@ -3,10 +3,6 @@ pragma solidity >=0.8.0;
 
 import "./TestBase.t.sol";
 
-uint256 constant ONE_PCT_SSR  = 1.000000000315522921573372069e27;
-uint256 constant FOUR_PCT_SSR = 1.000000001243680656318820312e27;
-uint256 constant MAX_SSR      = 1.000000021979553151239153027e27;
-
 contract VaultSetSsrBoundsFailureTests is VaultUnitTestBase {
 
     function test_setSsrBounds_notAdmin() public {

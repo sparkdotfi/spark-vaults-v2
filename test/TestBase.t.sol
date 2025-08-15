@@ -10,6 +10,10 @@ import { Vault } from "../src/Vault.sol";
 
 contract VaultUnitTestBase is Test {
 
+    uint256 constant ONE_PCT_SSR  = 1.000000000315522921573372069e27;
+    uint256 constant FOUR_PCT_SSR = 1.000000001243680656318820312e27;
+    uint256 constant MAX_SSR      = 1.000000021979553151239153027e27;  // 100% APY
+
     address admin  = makeAddr("admin");
     address setter = makeAddr("setter");
     address taker  = makeAddr("taker");
