@@ -38,7 +38,7 @@ contract VaultSetSsrBoundsFailureTests is VaultUnitTestBase {
 
 contract VaultSetSsrBoundsSuccessTests is VaultUnitTestBase {
 
-    event SsrBoundsSet(uint256 minSsr, uint256 maxSsr);
+    event SsrBoundsSet(uint256 oldMinSsr, uint256 oldMaxSsr, uint256 newMinSsr, uint256 newMaxSsr);
 
     function test_setSsrBounds() public {
         assertEq(vault.minSsr(), 1e27);
@@ -46,7 +46,7 @@ contract VaultSetSsrBoundsSuccessTests is VaultUnitTestBase {
 
         vm.startPrank(admin);
         vm.expectEmit(address(vault));
-        emit SsrBoundsSet(ONE_PCT_SSR, FOUR_PCT_SSR);
+        emit SsrBoundsSet(1e27, 1e27, ONE_PCT_SSR, FOUR_PCT_SSR);
         vault.setSsrBounds(ONE_PCT_SSR, FOUR_PCT_SSR);
 
         assertEq(vault.minSsr(), ONE_PCT_SSR);

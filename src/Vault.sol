@@ -127,10 +127,10 @@ contract Vault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, IVault {
         require(minSsr_ >= RAY,     "Vault/ssr-too-low");
         require(maxSsr_ <= MAX_SSR, "Vault/ssr-too-high");
 
+        emit SsrBoundsSet(minSsr, maxSsr, minSsr_, maxSsr_);
+
         minSsr = minSsr_;
         maxSsr = maxSsr_;
-
-        emit SsrBoundsSet(minSsr_, maxSsr_);
     }
 
     function setSsr(uint256 data) external onlyRole(SETTER_ROLE) {
