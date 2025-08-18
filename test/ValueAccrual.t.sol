@@ -316,7 +316,7 @@ contract ValueAccrualE2ETest is VaultTestBase {
         state.vaultTotalSupply  += state.vaultUser2Balance;
         state.vaultUser2Assets  += user2Deposit;
 
-        _assertTestState(state, 2);
+        _assertTestState(state, 3);
 
         // Step 6: Taker withdraws more assets
 
@@ -329,7 +329,7 @@ contract ValueAccrualE2ETest is VaultTestBase {
         state.assetTakerBalance += takerWithdrawal2;
         state.assetVaultBalance -= takerWithdrawal2;
 
-        _assertTestState(state, 2);
+        _assertTestState(state, 3);
 
         // Step 7: Setter decreases SSR
 
@@ -338,7 +338,7 @@ contract ValueAccrualE2ETest is VaultTestBase {
         vm.stopPrank();
 
         // No vault accounting changes
-        _assertTestState(state, 2);
+        _assertTestState(state, 3);
 
         // Step 8: Warp a year
 
@@ -348,7 +348,7 @@ contract ValueAccrualE2ETest is VaultTestBase {
         state.vaultUser1Assets += state.vaultUser1Assets * 0.01e27 / 1e27;  // 1% APY
         state.vaultUser2Assets += state.vaultUser2Assets * 0.01e27 / 1e27;  // 1% APY
 
-        _assertTestState(state, 2);
+        _assertTestState(state, 3);
 
         // Step 9: Taker adds all funds back with yield
 
@@ -363,7 +363,7 @@ contract ValueAccrualE2ETest is VaultTestBase {
 
         assertEq(state.assetVaultBalance, vault.totalAssets());
 
-        _assertTestState(state, 2);
+        _assertTestState(state, 3);
 
         // Step 10: User 1 withdraws full position
 
@@ -380,7 +380,7 @@ contract ValueAccrualE2ETest is VaultTestBase {
         state.vaultUser1Balance = 0;
         state.vaultUser1Assets  = 0;
 
-        _assertTestState(state, 2);
+        _assertTestState(state, 3);
 
         // Step 12: User 2 withdraws full position
 

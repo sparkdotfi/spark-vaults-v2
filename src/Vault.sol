@@ -341,6 +341,7 @@ contract Vault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, IVault {
         return balanceOf[owner];
     }
 
+    // TODO: Add remaining view functions
     function maxWithdraw(address owner) external view returns (uint256) {
         uint256 liquidity  = IERC20(asset).balanceOf(address(this));
         uint256 userAssets = assetsOf(owner);
@@ -376,6 +377,7 @@ contract Vault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, IVault {
     }
 
     function assetsOutstanding() public view returns (uint256) {
+        // TODO: Create a clamp function
         return totalAssets() - IERC20(asset).balanceOf(address(this));
     }
 
