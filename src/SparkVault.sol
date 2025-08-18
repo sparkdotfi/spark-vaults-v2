@@ -1,24 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-
-/// Vault.sol
-
-// Copyright (C) 2017, 2018, 2019 dbrock, rain, mrchico
-// Copyright (C) 2021 Dai Foundation
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
-//
-// You should have received a copy of the GNU Affero General Public License
-// along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-pragma solidity 0.8.29;
+pragma solidity ^0.8.25;
 
 import { ERC1967Utils } from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Utils.sol";
 import { SafeERC20 }    from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -29,19 +10,27 @@ import { AccessControlEnumerableUpgradeable }
 
 import { UUPSUpgradeable } from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 
-import { IVault } from "./IVault.sol";
+import { ISparkVault } from "./ISparkVault.sol";
 
 interface IERC1271 {
-    function isValidSignature(
-        bytes32,
-        bytes memory
-    ) external view returns (bytes4);
+    function isValidSignature(bytes32, bytes memory) external view returns (bytes4);
 }
+
+/*
+
+  ███████╗██████╗  █████╗ ██████╗ ██╗  ██╗    ██╗   ██╗ █████╗ ██╗   ██╗██╗  ████████╗
+  ██╔════╝██╔══██╗██╔══██╗██╔══██╗██║ ██╔╝    ██║   ██║██╔══██╗██║   ██║██║  ╚══██╔══╝
+  ███████╗██████╔╝███████║██████╔╝█████╔╝     ██║   ██║███████║██║   ██║██║     ██║
+  ╚════██║██╔═══╝ ██╔══██║██╔══██╗██╔═██╗     ╚██╗ ██╔╝██╔══██║██║   ██║██║     ██║
+  ███████║██║     ██║  ██║██║  ██║██║  ██╗     ╚████╔╝ ██║  ██║╚██████╔╝███████╗██║
+  ╚══════╝╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝      ╚═══╝  ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝
+
+*/
 
 /// @dev If the inheritance is updated, the functions in `initialize` must be updated as well.
 ///      Last updated for: `Initializable, UUPSUpgradeable, AccessControlEnumerableUpgradeable,
-///      IVault`.
-contract Vault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, IVault {
+///      ISparkVault`.
+contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISparkVault {
 
     /**********************************************************************************************/
     /*** Constants                                                                              ***/
@@ -72,9 +61,9 @@ contract Vault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, IVault {
     string public name;
     string public symbol;
 
-    uint64  public rho;    // Time of last drip      [unix epoch time]
-    uint192 public chi;    // The Rate Accumulator   [ray]
-    uint256 public ssr;    // The Spark Savings Rate [ray]
+    uint64  public rho;    // Time of last drip              [unix epoch time]
+    uint192 public chi;    // The Rate Accumulator           [ray]
+    uint256 public ssr;    // The Spark Savings Rate         [ray]
     uint256 public minSsr; // The minimum Spark Savings Rate [ray]
     uint256 public maxSsr; // The maximum Spark Savings Rate [ray]
 

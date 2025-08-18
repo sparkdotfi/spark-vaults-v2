@@ -6,9 +6,9 @@ import { Test } from "forge-std/Test.sol";
 import { ERC20Mock as MockERC20 } from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 import { ERC1967Proxy }           from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
-import { Vault } from "../src/Vault.sol";
+import { SparkVault } from "../src/SparkVault.sol";
 
-contract VaultTestBase is Test {
+contract SparkVaultTestBase is Test {
 
     uint256 constant ONE_PCT_SSR  = 1.000000000315522921573372069e27;
     uint256 constant FOUR_PCT_SSR = 1.000000001243680656318820312e27;
@@ -22,17 +22,17 @@ contract VaultTestBase is Test {
     bytes32 SETTER_ROLE        = keccak256("SETTER_ROLE");
     bytes32 TAKER_ROLE         = keccak256("TAKER_ROLE");
 
-    MockERC20 asset;
-    Vault     vault;
+    MockERC20  asset;
+    SparkVault vault;
 
     function setUp() public virtual {
         asset = new MockERC20();
 
-        vault = Vault(
+        vault = SparkVault(
             address(new ERC1967Proxy(
-                address(new Vault()),
+                address(new SparkVault()),
                 abi.encodeCall(
-                    Vault.initialize,
+                    SparkVault.initialize,
                     (address(asset), "Spark Savings USDC V2", "spUSDC", admin)
                 )
             ))

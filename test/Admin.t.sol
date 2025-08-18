@@ -3,7 +3,7 @@ pragma solidity >=0.8.0;
 
 import "./TestBase.t.sol";
 
-contract VaultSetSsrBoundsFailureTests is VaultTestBase {
+contract SparkVaultSetSsrBoundsFailureTests is SparkVaultTestBase {
 
     function test_setSsrBounds_notAdmin() public {
         vm.expectRevert(abi.encodeWithSignature(
@@ -32,7 +32,7 @@ contract VaultSetSsrBoundsFailureTests is VaultTestBase {
 
 }
 
-contract VaultSetSsrBoundsSuccessTests is VaultTestBase {
+contract SparkVaultSetSsrBoundsSuccessTests is SparkVaultTestBase {
 
     event SsrBoundsSet(uint256 oldMinSsr, uint256 oldMaxSsr, uint256 newMinSsr, uint256 newMaxSsr);
 
@@ -51,7 +51,7 @@ contract VaultSetSsrBoundsSuccessTests is VaultTestBase {
 
 }
 
-contract VaultSetSsrFailureTests is VaultTestBase {
+contract SparkVaultSetSsrFailureTests is SparkVaultTestBase {
 
     function test_setSsr_notSetter() public {
         vm.expectRevert(abi.encodeWithSignature(
@@ -102,7 +102,7 @@ contract VaultSetSsrFailureTests is VaultTestBase {
 
 }
 
-contract VaultSetSsrSuccessTests is VaultTestBase {
+contract SparkVaultSetSsrSuccessTests is SparkVaultTestBase {
 
     event Drip(uint256 nChi, uint256 diff);
     event SsrSet(address sender, uint256 oldSsr, uint256 newSsr);
@@ -141,7 +141,7 @@ contract VaultSetSsrSuccessTests is VaultTestBase {
 
 }
 
-contract VaultTakeFailureTests is VaultTestBase {
+contract SparkVaultTakeFailureTests is SparkVaultTestBase {
 
     function test_take_notTaker() public {
         vm.expectRevert(abi.encodeWithSignature(
@@ -164,7 +164,7 @@ contract VaultTakeFailureTests is VaultTestBase {
 
 }
 
-contract VaultTakeSuccessTests is VaultTestBase {
+contract SparkVaultTakeSuccessTests is SparkVaultTestBase {
 
     function test_take() public {
         deal(address(asset), address(vault), 1_000_000e6);

@@ -5,7 +5,7 @@ import "./TestBase.t.sol";
 
 import "forge-std/console2.sol";
 
-contract ValueAccrualE2ETest is VaultTestBase {
+contract ValueAccrualE2ETest is SparkVaultTestBase {
 
     address user1 = makeAddr("user1");
     address user2 = makeAddr("user2");
