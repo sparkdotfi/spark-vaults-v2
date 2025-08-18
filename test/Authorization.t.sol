@@ -51,6 +51,46 @@ contract SparkVaultSetSsrBoundsSuccessTests is SparkVaultTestBase {
 
 }
 
+contract SparkVaultRoleManagementFailureTests is SparkVaultTestBase {
+
+    function test_grantRole_notAdmin() public {
+        // > Check for DEFAULT_ADMIN_ROLE, SETTER_ROLE, TAKER_ROLE
+        bytes32[] memory roles = new bytes32[](3);
+        roles[0] = DEFAULT_ADMIN_ROLE;
+        roles[1] = SETTER_ROLE;
+        roles[2] = TAKER_ROLE;
+
+        for (uint256 i = 0; i < roles.length; i++) {
+            bytes32 role = roles[i];
+            vm.expectRevert(abi.encodeWithSignature(
+                "AccessControlUnauthorizedAccount(address,bytes32)",
+                address(this),
+                role
+            ));
+            vault.grantRole(role, address(0x1234));
+        }
+    }
+
+    function test_revokeRole_notAdmin() public {
+        // > Check for DEFAULT_ADMIN_ROLE, SETTER_ROLE, TAKER_ROLE
+        bytes32[] memory roles = new bytes32[](3);
+        roles[0] = DEFAULT_ADMIN_ROLE;
+        roles[1] = SETTER_ROLE;
+        roles[2] = TAKER_ROLE;
+
+        for (uint256 i = 0; i < roles.length; i++) {
+            bytes32 role = roles[i];
+            vm.expectRevert(abi.encodeWithSignature(
+                "AccessControlUnauthorizedAccount(address,bytes32)",
+                address(this),
+                role
+            ));
+            vault.revokeRole(role, address(0x1234));
+        }
+    }
+
+}
+
 contract SparkVaultSetSsrFailureTests is SparkVaultTestBase {
 
     function test_setSsr_notSetter() public {
