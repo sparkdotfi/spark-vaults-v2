@@ -6,7 +6,7 @@ The code of the [vault](./src/Vault.sol) is based on the [ISUsds][ISUsds] and [S
 [SUsds]: https://github.com/sky-ecosystem/sdai/blob/dfc7f41cb7599afcb0f0eb1ddaadbf9dd4015dce/src/SUsds.sol
 [sdai]: https://github.com/sky-ecosystem/sdai
 
-## `contract Vault`
+## `contract SparkVault`
 
 ### Access Control
 
@@ -35,12 +35,12 @@ Analogously, `_burn` interacts with the asset as the last state change, hence re
 
 ### Some outputs
 
-Llast updated when line was `contract Vault is Initializable, UUPSUpgradeable, AccessControlEnumerableUpgradeable, IVault {`):
+Llast updated when line was `contract SparkVault is Initializable, UUPSUpgradeable, AccessControlEnumerableUpgradeable, IVault {`):
 
 This is the inheritance tree:
 
 ```
-❯ wake print inheritance-tree -n Vault
+❯ wake print inheritance-tree -n SparkVault
 [12:22:26] Found 2 *.sol files in 0.09 s                                                 print.py:466
            Loaded previous build in 0.27 s                                            compiler.py:862
 [12:22:27] Compiled 33 files using 1 solc runs in 0.46 s                             compiler.py:1242
@@ -100,19 +100,19 @@ This is the storage layout:
            Loaded previous build in 0.25 s                                            compiler.py:862
            Compiled 0 files using 0 solc runs in 0.00 s                              compiler.py:1242
            Processed compilation results in 0.00 s                                   compiler.py:1495
-                                    Vault storage layout                                    
+                                    SparkVault storage layout
 ┏━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┓
 ┃ Slot ┃ Offset ┃ Name        ┃ Type                                            ┃ Contract ┃
 ┡━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━┩
-│ 0    │ 0      │ name        │ string                                          │ Vault    │
-│ 1    │ 0      │ symbol      │ string                                          │ Vault    │
-│ 2    │ 0      │ totalSupply │ uint256                                         │ Vault    │
-│ 3    │ 0      │ balanceOf   │ mapping(address => uint256)                     │ Vault    │
-│ 4    │ 0      │ allowance   │ mapping(address => mapping(address => uint256)) │ Vault    │
-│ 5    │ 0      │ nonces      │ mapping(address => uint256)                     │ Vault    │
-│ 6    │ 0      │ chi         │ uint192                                         │ Vault    │
-│      │ 24     │ rho         │ uint64                                          │ Vault    │
-│ 7    │ 0      │ ssr         │ uint256                                         │ Vault    │
+│ 0    │ 0      │ name        │ string                                          │ SparkVault    │
+│ 1    │ 0      │ symbol      │ string                                          │ SparkVault    │
+│ 2    │ 0      │ totalSupply │ uint256                                         │ SparkVault    │
+│ 3    │ 0      │ balanceOf   │ mapping(address => uint256)                     │ SparkVault    │
+│ 4    │ 0      │ allowance   │ mapping(address => mapping(address => uint256)) │ SparkVault    │
+│ 5    │ 0      │ nonces      │ mapping(address => uint256)                     │ SparkVault    │
+│ 6    │ 0      │ chi         │ uint192                                         │ SparkVault    │
+│      │ 24     │ rho         │ uint64                                          │ SparkVault    │
+│ 7    │ 0      │ ssr         │ uint256                                         │ SparkVault    │
 └──────┴────────┴─────────────┴─────────────────────────────────────────────────┴──────────┘
 ```
 

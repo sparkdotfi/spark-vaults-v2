@@ -20,7 +20,7 @@ pragma solidity >=0.8.0;
 import { IERC4626 }     from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 import { IERC20Permit } from "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Permit.sol";
 
-interface IVault is IERC20Permit, IERC4626 {
+interface ISparkVault is IERC20Permit, IERC4626 {
 
     // Events
     event Drip(uint256 chi, uint256 diff);

@@ -5,17 +5,17 @@ import { ERC4626Test } from "erc4626-tests/ERC4626.test.sol";
 
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
-import { Vault } from "src/Vault.sol";
+import { SparkVault } from "src/SparkVault.sol";
 
-import { VaultTestBase } from "./TestBase.t.sol";
+import { SparkVaultTestBase } from "./TestBase.t.sol";
 
-contract VaultERC4626Test is ERC4626Test, VaultTestBase {
+contract SparkVaultERC4626Test is ERC4626Test, SparkVaultTestBase {
 
-    // NOTE: This cannot be part of VaultTestBase, because that is used in a contract where DssTest
+    // NOTE: This cannot be part of SparkVaultTestBase, because that is used in a contract where DssTest
     // is also used (and that also defines RAY).
     uint256 constant internal RAY = 1e27;
 
-    function setUp() public override(ERC4626Test, VaultTestBase) {
+    function setUp() public override(ERC4626Test, SparkVaultTestBase) {
         super.setUp();
 
         vm.startPrank(admin);
