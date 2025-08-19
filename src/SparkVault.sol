@@ -428,7 +428,8 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
 
     function _pushAsset(address to, uint256 value) internal {
         require(
-            value <= IERC20(asset).balanceOf(address(this)), "SparkVault/insufficient-liquidity"
+            value <= IERC20(asset).balanceOf(address(this)),
+            "SparkVault/insufficient-liquidity"
         );
         SafeERC20.safeTransfer(IERC20(asset), to, value);
     }
