@@ -81,7 +81,7 @@ contract SparkVaultERC4626StandardTest is ERC4626Test, SparkVaultTestBase {
 
 }
 
-contract SparkVaultERC4626Test is SparkVaultERC4626StandardTest {
+contract SparkVaultERC4626Test is SparkVaultTestBase {
 
     address user1 = makeAddr("user1");
     address user2 = makeAddr("user2");
@@ -114,11 +114,14 @@ contract SparkVaultERC4626Test is SparkVaultERC4626StandardTest {
         uint256 assets = 1_000_000e18;
         uint256 shares = vault.previewDeposit(assets);
 
+        assertEq(shares, 999_892.551764336081175605e18);
+
         deal(address(asset), user2, assets);
 
-        assertEq(vault.balanceOf(user2), 0);
-        assertEq(vault.totalSupply(),    986_721.777104e6);
-        assertEq(asset.balanceOf(user2), assets);
+        assertEq(vault.balanceOf(user2),          0);
+        assertEq(vault.totalSupply(),             1_000_000e6);
+        assertEq(asset.balanceOf(user2),          assets);
+        assertEq(asset.balanceOf(address(vault)), 1_000_000e6);
 
         vm.startPrank(user2);
 
@@ -130,9 +133,10 @@ contract SparkVaultERC4626Test is SparkVaultERC4626StandardTest {
 
         vm.stopPrank();
 
-        assertEq(vault.balanceOf(user2), shares);
-        assertEq(vault.totalSupply(),    986_721.777104e6 + shares);
-        assertEq(asset.balanceOf(user2), 0);
+        assertEq(vault.balanceOf(user2),          shares);
+        assertEq(vault.totalSupply(),             1_000_000e6 + shares);
+        assertEq(asset.balanceOf(user2),          0);
+        assertEq(asset.balanceOf(address(vault)), 1_000_000e6 + assets);
     }
 
     function test_mintWithReferral() public {
@@ -141,11 +145,14 @@ contract SparkVaultERC4626Test is SparkVaultERC4626StandardTest {
         uint256 shares = 1_000_000e18;
         uint256 assets = vault.previewMint(shares);
 
+        assertEq(assets, 1_000_107.459782027902551817e18);
+
         deal(address(asset), user2, assets);
 
-        assertEq(vault.balanceOf(user2), 0);
-        assertEq(vault.totalSupply(),    986_721.777104e6);
-        assertEq(asset.balanceOf(user2), assets);
+        assertEq(vault.balanceOf(user2),          0);
+        assertEq(vault.totalSupply(),             1_000_000e6);
+        assertEq(asset.balanceOf(user2),          assets);
+        assertEq(asset.balanceOf(address(vault)), 1_000_000e6);
 
         vm.startPrank(user2);
 
@@ -157,9 +164,10 @@ contract SparkVaultERC4626Test is SparkVaultERC4626StandardTest {
 
         vm.stopPrank();
 
-        assertEq(vault.balanceOf(user2), shares);
-        assertEq(vault.totalSupply(),    986_721.777104e6 + shares);
-        assertEq(asset.balanceOf(user2), 0);
+        assertEq(vault.balanceOf(user2),          shares);
+        assertEq(vault.totalSupply(),             1_000_000e6 + shares);
+        assertEq(asset.balanceOf(user2),          0);
+        assertEq(asset.balanceOf(address(vault)), 1_000_000e6 + assets);
     }
 
 }
