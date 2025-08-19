@@ -3,6 +3,20 @@ pragma solidity >=0.8.0;
 
 import "./TestBase.t.sol";
 
+contract SparkVaultInitializeFailureTests is SparkVaultTestBase {
+
+    function test_initialize_alreadyInitialized() public {
+        vm.expectRevert(abi.encodeWithSignature("InvalidInitialization()"));
+        vault.initialize(
+            address(asset),
+            "Spark Savings USDC V2",
+            "spUSDC",
+            admin
+        );
+    }
+
+}
+
 contract SparkVaultInitializeSuccessTests is SparkVaultTestBase {
 
     // NOTE: This cannot be part of SparkVaultTestBase, because that is used in a contract where DssTest
@@ -71,20 +85,6 @@ contract SparkVaultInitializeSuccessTests is SparkVaultTestBase {
 
 }
 
-contract SparkVaultInitializeFailureTests is SparkVaultInitializeSuccessTests {
-
-    function test_initialize_alreadyInitialized() public {
-        vm.expectRevert(abi.encodeWithSignature("InvalidInitialization()"));
-        vault.initialize(
-            address(asset),
-            "Spark Savings USDC V2",
-            "spUSDC",
-            admin
-        );
-    }
-
-}
-
 contract SparkVaultGettersTests is SparkVaultTestBase {
 
     // NOTE: This cannot be part of SparkVaultTestBase, because that is used in a contract where DssTest
@@ -108,6 +108,7 @@ contract SparkVaultGettersTests is SparkVaultTestBase {
         vm.startPrank(admin);
         vault.setSsrBounds(1e27, vault.MAX_SSR());
         vm.startPrank(setter);
+
         // 5% APY:
         // ❯ bc -l <<< 'scale=27; e( l(1.05)/(60 * 60 * 24 * 365) )'
         // 1.000000001547125957863212448
