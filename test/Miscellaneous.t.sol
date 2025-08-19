@@ -1,4 +1,3 @@
-
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity >=0.8.0;
 
@@ -134,12 +133,12 @@ contract SparkVaultGettersTests is SparkVaultTestBase {
         assertEq(vault.nowChi(), 1.000005568121819975177325790e27);
 
         // >> Action
-         vault.drip();
+        vault.drip();
 
-         // >> After calling drip(), the values should be the same:
-         assertEq(vault.assetsOutstanding(), 500_005.568121e6);
-         assertEq(vault.assetsOf(user1), 1_000_005.568121e6);
-         assertEq(vault.nowChi(), 1.000005568121819975177325790e27);
+        // >> After calling drip(), the values should be the same:
+        assertEq(vault.assetsOutstanding(), 500_005.568121e6);
+        assertEq(vault.assetsOf(user1), 1_000_005.568121e6);
+        assertEq(vault.nowChi(), 1.000005568121819975177325790e27);
     }
 
 }
