@@ -45,3 +45,4 @@ contract SparkVaultTestBase is Test {
     }
 
 }
+
