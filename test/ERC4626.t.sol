@@ -9,7 +9,7 @@ import { SparkVault } from "src/SparkVault.sol";
 
 import { SparkVaultTestBase } from "./TestBase.t.sol";
 
-contract SparkVaultERC4626Test is ERC4626Test, SparkVaultTestBase {
+contract SparkVaultERC4626StandardTest is ERC4626Test, SparkVaultTestBase {
 
     // NOTE: This cannot be part of SparkVaultTestBase, because that is used in a contract where DssTest
     // is also used (and that also defines RAY).
@@ -79,40 +79,6 @@ contract SparkVaultERC4626Test is ERC4626Test, SparkVaultTestBase {
         }
     }
 
-    function test_previewRedeem_reverts(Init memory init, uint shares) public {
-        setUpVault(init);
-        address caller   = init.user[0];
-        address receiver = init.user[1];
-        address owner    = init.user[2];
-        address other    = init.user[3];
-        shares = bound(shares, 1, 1_000_000_000e18 - 1);
-        _approve(_vault_, owner, caller, type(uint).max);
-
-        vm.startPrank(taker);
-        vault.take(IMockERC20(_underlying_).balanceOf(address(vault)));
-        vm.stopPrank();
-
-        vm.expectRevert("Vault/insufficient-liquidity");
-        vault.previewRedeem(shares);
-    }
-
-    function test_previewWithdraw_reverts(Init memory init, uint assets) public {
-        setUpVault(init);
-        address caller   = init.user[0];
-        address receiver = init.user[1];
-        address owner    = init.user[2];
-        address other    = init.user[3];
-        assets = bound(assets, 1, 1_000_000_000e18 - 1);
-        _approve(_vault_, owner, caller, type(uint).max);
-
-        vm.startPrank(taker);
-        vault.take(IMockERC20(_underlying_).balanceOf(address(vault)));
-        vm.stopPrank();
-
-        vm.expectRevert("Vault/insufficient-liquidity");
-        vault.previewWithdraw(assets);
-    }
-
     function test_maxRedeem_liquidityLessThanAmount(Init memory init) public {
         setUpVault(init);
         address caller = init.user[0];
@@ -139,6 +105,72 @@ contract SparkVaultERC4626Test is ERC4626Test, SparkVaultTestBase {
 
         // Withdraw max amount should return 0
         assertEq(vault.maxWithdraw(owner), 0);
+    }
+
+    function test_previewWithdraw_revertsOverLiquidityBoundary() public {
+        setUpVault(init);
+        address caller   = init.user[0];
+        address receiver = init.user[1];
+        address owner    = init.user[2];
+        address other    = init.user[3];
+        assets = bound(assets, 1, 1_000_000_000e18 - 1);
+        _approve(_vault_, owner, caller, type(uint).max);
+
+        vm.startPrank(taker);
+        vault.take(IMockERC20(_underlying_).balanceOf(address(vault)));
+        vm.stopPrank();
+
+        vm.expectRevert("Vault/insufficient-liquidity");
+        vault.previewWithdraw(assets);
+    }
+
+}
+
+contract SparkVaultERC4626Test is SparkVaultTestBase {
+
+    address user1 = makeAddr("user1");
+
+    // Do some deposits to get some non-zero state
+    function setUp() public override {
+        super.setUp();
+
+        vm.prank(admin);
+        vault.setSsrBounds(ONE_PCT_SSR, FOUR_PCT_SSR);
+
+        vm.prank(setter);
+        vault.setSsr(FOUR_PCT_SSR);
+
+        deal(address(asset), user1, 1_000_000e6);
+
+        vm.startPrank(user1);
+        asset.approve(address(vault), 1_000_000e6);
+        vault.deposit(1_000_000e6, user1);
+        vm.stopPrank();
+
+        skip(1 days);
+    }
+
+    function test_previewRedeem_revertsOverLiquidityBoundary() public {
+        // Deal value accrued to the vault
+        deal(address(asset), address(this), 107.459782e6);
+        asset.transfer(address(vault), 107.459782e6);
+
+        uint256 shares = vault.balanceOf(user1);
+
+        // Take 1 wei of liquidity from the vault
+        vm.prank(taker);
+        vault.take(1);
+
+        // Redeem should revert over the liquidity boundary
+        vm.expectRevert("SparkVault/insufficient-liquidity");
+        vault.previewRedeem(shares);
+
+        // Transfer 1 wei of liquidity back to the vault
+        vm.prank(taker);
+        asset.transfer(address(vault), 1);
+
+        // Redeem should now succeed
+        vault.previewRedeem(shares);
     }
 
 }
