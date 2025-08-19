@@ -105,20 +105,20 @@ contract SparkVaultRoleManagementSuccessTests is SparkVaultTestBase {
         vm.startPrank(admin);
         for (uint256 i = 0; i < roles.length; i++) {
             bytes32 role = roles[i];
-            assertFalse(vault.hasRole(role, address(0x1234)), "Role already granted");
+            assertFalse(vault.hasRole(role, address(0x1234)));
 
             vm.expectEmit(address(vault));
             emit RoleGranted(role, address(0x1234), admin);
             vault.grantRole(role, address(0x1234));
 
-            assertTrue(vault.hasRole(role, address(0x1234)), "Role not granted");
+            assertTrue(vault.hasRole(role, address(0x1234)));
 
             // Check role admin hasn't changed
-            assertTrue(vault.getRoleAdmin(role) == DEFAULT_ADMIN_ROLE, "Role admin changed.");
+            assertTrue(vault.getRoleAdmin(role) == DEFAULT_ADMIN_ROLE);
         }
 
         // Check that our admin in still DEFAULT_ADMIN_ROLE
-        assertTrue(vault.hasRole(DEFAULT_ADMIN_ROLE, admin), "Admin lost DEFAULT_ADMIN_ROLE");
+        assertTrue(vault.hasRole(DEFAULT_ADMIN_ROLE, admin));
     }
 
     function test_revokeRole() public {
@@ -134,20 +134,20 @@ contract SparkVaultRoleManagementSuccessTests is SparkVaultTestBase {
         for (uint256 i = 0; i < roles.length; i++) {
             bytes32 role = roles[i];
 
-            assertTrue(vault.hasRole(role, address(0x1234)), "Role not granted");
+            assertTrue(vault.hasRole(role, address(0x1234)));
 
             vm.expectEmit(address(vault));
             emit RoleRevoked(role, address(0x1234), admin);
             vault.revokeRole(role, address(0x1234));
 
-            assertFalse(vault.hasRole(role, address(0x1234)), "Role not granted");
+            assertFalse(vault.hasRole(role, address(0x1234)));
 
             // Check role admin hasn't changed
-            assertTrue(vault.getRoleAdmin(role) == DEFAULT_ADMIN_ROLE, "Role admin changed.");
+            assertTrue(vault.getRoleAdmin(role) == DEFAULT_ADMIN_ROLE);
         }
 
         // Check that our admin in still DEFAULT_ADMIN_ROLE
-        assertTrue(vault.hasRole(DEFAULT_ADMIN_ROLE, admin), "Admin lost DEFAULT_ADMIN_ROLE");
+        assertTrue(vault.hasRole(DEFAULT_ADMIN_ROLE, admin));
     }
 
 }
