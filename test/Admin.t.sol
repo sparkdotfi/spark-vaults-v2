@@ -16,7 +16,7 @@ contract SparkVaultSetSsrBoundsFailureTests is SparkVaultTestBase {
 
     function test_setSsrBounds_belowRayBoundary() public {
         vm.startPrank(admin);
-        vm.expectRevert("Vault/ssr-too-low");
+        vm.expectRevert("SparkVault/ssr-too-low");
         vault.setSsrBounds(1e27 - 1, FOUR_PCT_SSR);
 
         vault.setSsrBounds(1e27, FOUR_PCT_SSR);
@@ -24,7 +24,7 @@ contract SparkVaultSetSsrBoundsFailureTests is SparkVaultTestBase {
 
     function test_setSsrBounds_aboveMaxSsrBoundary() public {
         vm.startPrank(admin);
-        vm.expectRevert("Vault/ssr-too-high");
+        vm.expectRevert("SparkVault/ssr-too-high");
         vault.setSsrBounds(1e27, MAX_SSR + 1);
 
         vault.setSsrBounds(1e27, MAX_SSR);
@@ -64,7 +64,7 @@ contract SparkVaultSetSsrFailureTests is SparkVaultTestBase {
 
     function test_setSsr_belowMinSsrBoundary() public {
         vm.startPrank(setter);
-        vm.expectRevert("Vault/ssr-too-low");
+        vm.expectRevert("SparkVault/ssr-too-low");
         vault.setSsr(1e27 - 1);
 
         vault.setSsr(1e27);  // Min is 1e27 on deployment
@@ -75,7 +75,7 @@ contract SparkVaultSetSsrFailureTests is SparkVaultTestBase {
         vault.setSsrBounds(ONE_PCT_SSR, FOUR_PCT_SSR);
 
         vm.startPrank(setter);
-        vm.expectRevert("Vault/ssr-too-low");
+        vm.expectRevert("SparkVault/ssr-too-low");
         vault.setSsr(ONE_PCT_SSR - 1);
 
         vault.setSsr(ONE_PCT_SSR);
@@ -83,7 +83,7 @@ contract SparkVaultSetSsrFailureTests is SparkVaultTestBase {
 
     function test_setSsr_aboveMaxSsrBoundary() public {
         vm.startPrank(setter);
-        vm.expectRevert("Vault/ssr-too-high");
+        vm.expectRevert("SparkVault/ssr-too-high");
         vault.setSsr(1e27 + 1);  // Can't set SSR until admin sets bounds
 
         vault.setSsr(1e27);  // Max is 1e27 on deployment
@@ -94,7 +94,7 @@ contract SparkVaultSetSsrFailureTests is SparkVaultTestBase {
         vault.setSsrBounds(ONE_PCT_SSR, FOUR_PCT_SSR);
 
         vm.startPrank(setter);
-        vm.expectRevert("Vault/ssr-too-high");
+        vm.expectRevert("SparkVault/ssr-too-high");
         vault.setSsr(FOUR_PCT_SSR + 1);
 
         vault.setSsr(FOUR_PCT_SSR);
