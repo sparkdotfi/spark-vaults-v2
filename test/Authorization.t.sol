@@ -51,7 +51,7 @@ contract SparkVaultSetSsrBoundsSuccessTests is SparkVaultTestBase {
 
 }
 
-contract SparkVaultRoleManagementFailureTests is SparkVaultTestBase {
+contract SparkVaultGrantRoleFailureTests is SparkVaultTestBase {
 
     function test_grantRole_notAdmin() public {
         bytes32[] memory roles = new bytes32[](3);
@@ -70,26 +70,9 @@ contract SparkVaultRoleManagementFailureTests is SparkVaultTestBase {
         }
     }
 
-    function test_revokeRole_notAdmin() public {
-        bytes32[] memory roles = new bytes32[](3);
-        roles[0] = DEFAULT_ADMIN_ROLE;
-        roles[1] = SETTER_ROLE;
-        roles[2] = TAKER_ROLE;
-
-        for (uint256 i = 0; i < roles.length; i++) {
-            bytes32 role = roles[i];
-            vm.expectRevert(abi.encodeWithSignature(
-                "AccessControlUnauthorizedAccount(address,bytes32)",
-                address(this),
-                DEFAULT_ADMIN_ROLE
-            ));
-            vault.revokeRole(role, address(0x1234));
-        }
-    }
-
 }
 
-contract SparkVaultRoleManagementSuccessTests is SparkVaultTestBase {
+contract SparkVaultGrantRoleSuccessTests is SparkVaultTestBase {
 
     event RoleGranted(bytes32 indexed role, address indexed account, address indexed sender);
     event RoleRevoked(bytes32 indexed role, address indexed account, address indexed sender);
@@ -120,6 +103,31 @@ contract SparkVaultRoleManagementSuccessTests is SparkVaultTestBase {
         // Check that our admin in still DEFAULT_ADMIN_ROLE
         assertTrue(vault.hasRole(DEFAULT_ADMIN_ROLE, admin));
     }
+
+}
+
+contract SparkVaultRevokeRoleFailureTests is SparkVaultTestBase {
+
+    function test_revokeRole_notAdmin() public {
+        bytes32[] memory roles = new bytes32[](3);
+        roles[0] = DEFAULT_ADMIN_ROLE;
+        roles[1] = SETTER_ROLE;
+        roles[2] = TAKER_ROLE;
+
+        for (uint256 i = 0; i < roles.length; i++) {
+            bytes32 role = roles[i];
+            vm.expectRevert(abi.encodeWithSignature(
+                "AccessControlUnauthorizedAccount(address,bytes32)",
+                address(this),
+                DEFAULT_ADMIN_ROLE
+            ));
+            vault.revokeRole(role, address(0x1234));
+        }
+    }
+
+}
+
+contract SparkVaultRevokeRoleSuccessTests is SparkVaultGrantRoleSuccessTests {
 
     function test_revokeRole() public {
         bytes32[] memory roles = new bytes32[](3);
