@@ -52,11 +52,11 @@ contract SparkVaultMiscellaneousTests is SparkVaultTestBase {
     // is also used (and that also defines RAY).
     uint256 constant internal RAY = 1e27;
 
-    // This is from OpenZeppelin's Initializable.sol, which is used in SparkVault.
-    // keccak256(abi.encode(uint256(keccak256("openzeppelin.storage.Initializable")) - 1)) & ~bytes32(uint256(0xff))
-    bytes32 private constant INITIALIZABLE_STORAGE = 0xf0c57e16840df040f15088dc2f81fe391c3923bec73e23a9662efc9c229c6a00;
-
     function test_initialize() public {
+        // This is from OpenZeppelin's Initializable.sol, which is used in SparkVault.
+        // keccak256(abi.encode(uint256(keccak256("openzeppelin.storage.Initializable")) - 1)) & ~bytes32(uint256(0xff))
+        bytes32 INITIALIZABLE_STORAGE = 0xf0c57e16840df040f15088dc2f81fe391c3923bec73e23a9662efc9c229c6a00;
+
         // >> Don't use the vault created by `setUp()`, create our own here:
         vault = SparkVault(
             address(new ERC1967Proxy(
@@ -109,6 +109,8 @@ contract SparkVaultMiscellaneousTests is SparkVaultTestBase {
         assertEq(vault.minSsr(), RAY);
         assertEq(vault.maxSsr(), RAY);
     }
+
+    function test_
 
 }
 
