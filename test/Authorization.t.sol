@@ -54,7 +54,6 @@ contract SparkVaultSetSsrBoundsSuccessTests is SparkVaultTestBase {
 contract SparkVaultRoleManagementFailureTests is SparkVaultTestBase {
 
     function test_grantRole_notAdmin() public {
-        // > Check for DEFAULT_ADMIN_ROLE, SETTER_ROLE, TAKER_ROLE
         bytes32[] memory roles = new bytes32[](3);
         roles[0] = DEFAULT_ADMIN_ROLE;
         roles[1] = SETTER_ROLE;
@@ -67,13 +66,11 @@ contract SparkVaultRoleManagementFailureTests is SparkVaultTestBase {
                 address(this),
                 DEFAULT_ADMIN_ROLE
             ));
-            // >> Action
             vault.grantRole(role, address(0x1234));
         }
     }
 
     function test_revokeRole_notAdmin() public {
-        // > Check for DEFAULT_ADMIN_ROLE, SETTER_ROLE, TAKER_ROLE
         bytes32[] memory roles = new bytes32[](3);
         roles[0] = DEFAULT_ADMIN_ROLE;
         roles[1] = SETTER_ROLE;
@@ -86,7 +83,6 @@ contract SparkVaultRoleManagementFailureTests is SparkVaultTestBase {
                 address(this),
                 DEFAULT_ADMIN_ROLE
             ));
-            // >> Action
             vault.revokeRole(role, address(0x1234));
         }
     }
@@ -104,71 +100,53 @@ contract SparkVaultRoleManagementSuccessTests is SparkVaultTestBase {
         roles[1] = SETTER_ROLE;
         roles[2] = TAKER_ROLE;
 
-        // > admin (DEFAULT_ADMIN_ROLE) should be allowed to grant DEFAULT_ADMIN_ROLE, SETTER_ROLE,
-        // > TAKER_ROLE.
-        // >> Prank
+        // admin (DEFAULT_ADMIN_ROLE) should be allowed to grant DEFAULT_ADMIN_ROLE, SETTER_ROLE,
+        // TAKER_ROLE.
         vm.startPrank(admin);
         for (uint256 i = 0; i < roles.length; i++) {
             bytes32 role = roles[i];
+            assertFalse(vault.hasRole(role, address(0x1234)), "Role already granted");
+
             vm.expectEmit(address(vault));
             emit RoleGranted(role, address(0x1234), admin);
-            // >> Action
             vault.grantRole(role, address(0x1234));
 
-            // >> Check role was granted
             assertTrue(vault.hasRole(role, address(0x1234)), "Role not granted");
-            // >> Check role admin is still DEFAULT_ADMIN_ROLE
+
+            // Check role admin hasn't changed
             assertTrue(vault.getRoleAdmin(role) == DEFAULT_ADMIN_ROLE, "Role admin changed.");
         }
 
-        // >> Check that our admin in still DEFAULT_ADMIN_ROLE
+        // Check that our admin in still DEFAULT_ADMIN_ROLE
         assertTrue(vault.hasRole(DEFAULT_ADMIN_ROLE, admin), "Admin lost DEFAULT_ADMIN_ROLE");
     }
 
     function test_revokeRole() public {
-        // > Each role has an admin role, by default DEFAULT_ADMIN_ROLE is the admin for all roles
-        // > (including itself). `admin` is a member of that role, so by default cannot set or take,
-        // > but can assign setters and takers. We set 0x1234 to be all three roles, then revoke
-        // > them. `admin` should still have DEEFAULT_ADMIN_ROLE at the end.
-        //                           ┌ ─ ─ ─ ─ ─ ┐
-        //
-        //                           │           │
-        //                 ┌──────────────────┐
-        // admin  ────────▶│DEFAULT_ADMIN_ROLE│◀─┼─┐
-        //              │  └──────────────────┘    │
-        //                 ┌──────────────────┐  │ │
-        //              └ ─│   SETTER_ROLE    │◀───┼─────0x1234
-        //                 └──────────────────┘  │ │
-        //                 ┌──────────────────┐    │
-        //                 │    TAKER_ROLE    │◀─┴─┘
-        //                 └──────────────────┘
         bytes32[] memory roles = new bytes32[](3);
         roles[0] = DEFAULT_ADMIN_ROLE;
         roles[1] = SETTER_ROLE;
         roles[2] = TAKER_ROLE;
 
-        // > admin (DEFAULT_ADMIN_ROLE) should be allowed to revoke DEFAULT_ADMIN_ROLE, SETTER_ROLE,
-        // > TAKER_ROLE.
-
-        // >> First, call test_grantRole()
+        // First, call test_grantRole()
         test_grantRole();
 
-        // >> Prank
         vm.startPrank(admin);
         for (uint256 i = 0; i < roles.length; i++) {
             bytes32 role = roles[i];
+
+            assertTrue(vault.hasRole(role, address(0x1234)), "Role not granted");
+
             vm.expectEmit(address(vault));
             emit RoleRevoked(role, address(0x1234), admin);
-            // >> Action
             vault.revokeRole(role, address(0x1234));
 
-            // >> Check role was revoked
             assertFalse(vault.hasRole(role, address(0x1234)), "Role not granted");
-            // >> Check role admin is still DEFAULT_ADMIN_ROLE
+
+            // Check role admin hasn't changed
             assertTrue(vault.getRoleAdmin(role) == DEFAULT_ADMIN_ROLE, "Role admin changed.");
         }
 
-        // >> Check that our admin in still DEFAULT_ADMIN_ROLE
+        // Check that our admin in still DEFAULT_ADMIN_ROLE
         assertTrue(vault.hasRole(DEFAULT_ADMIN_ROLE, admin), "Admin lost DEFAULT_ADMIN_ROLE");
     }
 
