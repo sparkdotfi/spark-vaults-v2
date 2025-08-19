@@ -181,7 +181,7 @@ contract ValueAccrualE2ETest is SparkVaultTestBase {
         assertEq(vault.assetsOf(user2), 1_010_000e6 - 1);
 
         vm.startPrank(user2);
-        vm.expectRevert("Vault/insufficient-liquidity");
+        vm.expectRevert("SparkVault/insufficient-liquidity");
         vault.withdraw(maxWithdraw + 1, user2, user2);
 
         vault.withdraw(maxWithdraw, user2, user2);
