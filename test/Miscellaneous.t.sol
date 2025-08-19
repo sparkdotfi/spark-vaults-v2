@@ -114,9 +114,8 @@ contract SparkVaultGettersTests is SparkVaultTestBase {
         vault.setSsr(1.000000001547125957863212448e27);
         vm.stopPrank();
 
-        vm.startPrank(taker);
+        vm.prank(taker);
         vault.take(500_000e6);
-        vm.stopPrank();
 
         assertEq(vault.totalAssets(),       1_000_000e6);
         assertEq(vault.assetsOutstanding(), 500_000e6);
