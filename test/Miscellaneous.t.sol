@@ -91,7 +91,7 @@ contract SparkVaultGettersTests is SparkVaultTestBase {
     // is also used (and that also defines RAY).
     uint256 constant internal RAY = 1e27;
 
-    function test_getters() public {
+    function test_convenienceViewFunctions() public {
         // Test `assetsOf(address)`, `assetsOutstanding()`, `nowChi()`
         address user1 = makeAddr("user1");
         deal(address(asset), user1, 1_000_000e6);
@@ -102,8 +102,8 @@ contract SparkVaultGettersTests is SparkVaultTestBase {
         vm.stopPrank();
 
         assertEq(vault.assetsOutstanding(), 0);
-        assertEq(vault.assetsOf(user1), 1_000_000e6);
-        assertEq(vault.nowChi(), RAY);
+        assertEq(vault.assetsOf(user1),     1_000_000e6);
+        assertEq(vault.nowChi(),            RAY);
 
         vm.startPrank(admin);
         vault.setSsrBounds(1e27, vault.MAX_SSR());
@@ -118,25 +118,25 @@ contract SparkVaultGettersTests is SparkVaultTestBase {
         vault.take(500_000e6);
         vm.stopPrank();
 
-        assertEq(vault.totalAssets(), 1_000_000e6);
+        assertEq(vault.totalAssets(),       1_000_000e6);
         assertEq(vault.assetsOutstanding(), 500_000e6);
-        assertEq(vault.assetsOf(user1), 1_000_000e6);
-        assertEq(vault.nowChi(), RAY);
+        assertEq(vault.assetsOf(user1),     1_000_000e6);
+        assertEq(vault.nowChi(),            RAY);
 
         vm.warp(1 hours);
 
         // Even without calling drip(), these functions return new values (they all use `nowChi()`
         // internally):
         assertEq(vault.assetsOutstanding(), 500_005.568121e6);
-        assertEq(vault.assetsOf(user1), 1_000_005.568121e6);
-        assertEq(vault.nowChi(), 1.000005568121819975177325790e27);
+        assertEq(vault.assetsOf(user1),     1_000_005.568121e6);
+        assertEq(vault.nowChi(),            1.000005568121819975177325790e27);
 
         vault.drip();
 
         // After calling drip(), the values should be the same:
         assertEq(vault.assetsOutstanding(), 500_005.568121e6);
-        assertEq(vault.assetsOf(user1), 1_000_005.568121e6);
-        assertEq(vault.nowChi(), 1.000005568121819975177325790e27);
+        assertEq(vault.assetsOf(user1),     1_000_005.568121e6);
+        assertEq(vault.nowChi(),            1.000005568121819975177325790e27);
     }
 
 }
