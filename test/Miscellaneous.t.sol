@@ -14,14 +14,15 @@ contract SparkVaultInitializeSuccessTests is SparkVaultTestBase {
         // keccak256(abi.encode(uint256(keccak256("openzeppelin.storage.Initializable")) - 1)) & ~bytes32(uint256(0xff))
         bytes32 INITIALIZABLE_STORAGE = 0xf0c57e16840df040f15088dc2f81fe391c3923bec73e23a9662efc9c229c6a00;
 
-        // >> Don't use the vault created by `setUp()`, create our own here:
+        // Overwrite vault deployment from setUp() to test initialization
         vault = SparkVault(
             address(new ERC1967Proxy(
                 address(new SparkVault()),
                 ""
             ))
         );
-        // >> Assert that the vault is not initialized
+
+        // Assert that the vault is not initialized
         assertEq(
             vm.load(
                 address(vault),
@@ -29,17 +30,17 @@ contract SparkVaultInitializeSuccessTests is SparkVaultTestBase {
             ),
             bytes32(0)
         );
-        assertEq(vault.asset(), address(0));
-        assertEq(vault.name(), "");
+        assertEq(vault.asset(),  address(0));
+        assertEq(vault.name(),   "");
         assertEq(vault.symbol(), "");
-        assertFalse(vault.hasRole(DEFAULT_ADMIN_ROLE, admin));
-        assertEq(vault.chi(), 0);
-        assertEq(vault.rho(), 0);
-        assertEq(vault.ssr(), 0);
+        assertEq(vault.chi(),    0);
+        assertEq(vault.rho(),    0);
+        assertEq(vault.ssr(),    0);
         assertEq(vault.minSsr(), 0);
         assertEq(vault.maxSsr(), 0);
 
-        // >> Action
+        assertFalse(vault.hasRole(DEFAULT_ADMIN_ROLE, admin));
+
         vault.initialize(
             address(asset),
             "Spark Savings USDC V2",
@@ -47,7 +48,7 @@ contract SparkVaultInitializeSuccessTests is SparkVaultTestBase {
             admin
         );
 
-        // >> Assert that the vault has been initialized
+        // Assert that the vault has been initialized
         assertEq(
             vm.load(
                 address(vault),
@@ -56,15 +57,16 @@ contract SparkVaultInitializeSuccessTests is SparkVaultTestBase {
             bytes32(uint256(1))
         );
 
-        assertEq(vault.asset(), address(asset));
-        assertEq(vault.name(), "Spark Savings USDC V2");
+        assertEq(vault.asset(),  address(asset));
+        assertEq(vault.name(),   "Spark Savings USDC V2");
         assertEq(vault.symbol(), "spUSDC");
+        assertEq(vault.chi(),     RAY);
+        assertEq(vault.rho(),     uint64(block.timestamp));
+        assertEq(vault.ssr(),     RAY);
+        assertEq(vault.minSsr(),  RAY);
+        assertEq(vault.maxSsr(),  RAY);
+
         assertTrue(vault.hasRole(DEFAULT_ADMIN_ROLE, admin));
-        assertEq(vault.chi(), RAY);
-        assertEq(vault.rho(), uint64(block.timestamp));
-        assertEq(vault.ssr(), RAY);
-        assertEq(vault.minSsr(), RAY);
-        assertEq(vault.maxSsr(), RAY);
     }
 
 }
@@ -90,11 +92,10 @@ contract SparkVaultGettersTests is SparkVaultTestBase {
     uint256 constant internal RAY = 1e27;
 
     function test_getters() public {
-        // > Test `assetsOf(address)`, `assetsOutstanding()`, `nowChi()`
+        // Test `assetsOf(address)`, `assetsOutstanding()`, `nowChi()`
         address user1 = makeAddr("user1");
         deal(address(asset), user1, 1_000_000e6);
 
-        // >> Prank
         vm.startPrank(user1);
         asset.approve(address(vault), 1_000_000e6);
         vault.deposit(1_000_000e6, user1);
@@ -113,7 +114,6 @@ contract SparkVaultGettersTests is SparkVaultTestBase {
         vault.setSsr(1.000000001547125957863212448e27);
         vm.stopPrank();
 
-        // >> Action
         vm.startPrank(taker);
         vault.take(500_000e6);
         vm.stopPrank();
@@ -123,19 +123,17 @@ contract SparkVaultGettersTests is SparkVaultTestBase {
         assertEq(vault.assetsOf(user1), 1_000_000e6);
         assertEq(vault.nowChi(), RAY);
 
-        // >> Action
         vm.warp(1 hours);
 
-        // >> Even without calling drip(), these functions return new values (they all use `nowChi()`
+        // Even without calling drip(), these functions return new values (they all use `nowChi()`
         // internally):
         assertEq(vault.assetsOutstanding(), 500_005.568121e6);
         assertEq(vault.assetsOf(user1), 1_000_005.568121e6);
         assertEq(vault.nowChi(), 1.000005568121819975177325790e27);
 
-        // >> Action
         vault.drip();
 
-        // >> After calling drip(), the values should be the same:
+        // After calling drip(), the values should be the same:
         assertEq(vault.assetsOutstanding(), 500_005.568121e6);
         assertEq(vault.assetsOf(user1), 1_000_005.568121e6);
         assertEq(vault.nowChi(), 1.000005568121819975177325790e27);
