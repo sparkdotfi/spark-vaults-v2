@@ -101,12 +101,8 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
         maxSsr = RAY;
     }
 
-    function _authorizeUpgrade(address newImplementation)
-        internal override onlyRole(DEFAULT_ADMIN_ROLE) {}
-
-    function getImplementation() external view returns (address) {
-        return ERC1967Utils.getImplementation();
-    }
+    // Only DEFAULT_ADMIN_ROLE can upgrade the implementation
+    function _authorizeUpgrade(address) internal view override onlyRole(DEFAULT_ADMIN_ROLE) {}
 
     /**********************************************************************************************/
     /*** Role-based external functions                                                          ***/
@@ -368,6 +364,10 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
     function assetsOutstanding() public view returns (uint256) {
         // TODO: Create a clamp function
         return totalAssets() - IERC20(asset).balanceOf(address(this));
+    }
+
+    function getImplementation() external view returns (address) {
+        return ERC1967Utils.getImplementation();
     }
 
     function nowChi() public view returns (uint256) {
