@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity 0.8.29;
 
-import { ERC4626Test } from "erc4626-tests/ERC4626.test.sol";
+import { ERC4626Test, IMockERC20 } from "erc4626-tests/ERC4626.test.sol";
 
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
@@ -77,6 +77,68 @@ contract SparkVaultERC4626Test is ERC4626Test, SparkVaultTestBase {
             assertEq(uint256(vault.rho()), block.timestamp);
             assertEq(uint256(vault.chi()), newChi);
         }
+    }
+
+    function test_previewRedeem_reverts(Init memory init, uint shares) public {
+        setUpVault(init);
+        address caller   = init.user[0];
+        address receiver = init.user[1];
+        address owner    = init.user[2];
+        address other    = init.user[3];
+        shares = bound(shares, 1, 1_000_000_000e18 - 1);
+        _approve(_vault_, owner, caller, type(uint).max);
+
+        vm.startPrank(taker);
+        vault.take(IMockERC20(_underlying_).balanceOf(address(vault)));
+        vm.stopPrank();
+
+        vm.expectRevert("Vault/insufficient-liquidity");
+        vault.previewRedeem(shares);
+    }
+
+    function test_previewWithdraw_reverts(Init memory init, uint assets) public {
+        setUpVault(init);
+        address caller   = init.user[0];
+        address receiver = init.user[1];
+        address owner    = init.user[2];
+        address other    = init.user[3];
+        assets = bound(assets, 1, 1_000_000_000e18 - 1);
+        _approve(_vault_, owner, caller, type(uint).max);
+
+        vm.startPrank(taker);
+        vault.take(IMockERC20(_underlying_).balanceOf(address(vault)));
+        vm.stopPrank();
+
+        vm.expectRevert("Vault/insufficient-liquidity");
+        vault.previewWithdraw(assets);
+    }
+
+    function test_maxRedeem_liquidityLessThanAmount(Init memory init) public {
+        setUpVault(init);
+        address caller = init.user[0];
+        address owner  = init.user[1];
+
+        // Remove all liquidity from the vault
+        vm.startPrank(taker);
+        vault.take(IMockERC20(_underlying_).balanceOf(address(vault)));
+        vm.stopPrank();
+
+        // Redeem max amount should return 0
+        assertEq(vault.maxRedeem(owner), 0);
+    }
+
+    function test_maxWithdraw_liquidityLessThanAmount(Init memory init) public {
+        setUpVault(init);
+        address caller = init.user[0];
+        address owner  = init.user[1];
+
+        // Remove all liquidity from the vault
+        vm.startPrank(taker);
+        vault.take(IMockERC20(_underlying_).balanceOf(address(vault)));
+        vm.stopPrank();
+
+        // Withdraw max amount should return 0
+        assertEq(vault.maxWithdraw(owner), 0);
     }
 
 }

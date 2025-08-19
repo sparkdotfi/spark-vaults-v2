@@ -323,7 +323,9 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
     }
 
     function maxRedeem(address owner) external view returns (uint256) {
-        return balanceOf[owner];
+        uint256 liquidity  = IERC20(asset).balanceOf(address(this));
+        uint256 userAssets = balanceOf[owner];
+        return liquidity > userAssets ? userAssets : liquidity;
     }
 
     // TODO: Add remaining view functions
@@ -341,12 +343,18 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
         return _divup(shares * nowChi(), RAY);
     }
 
-    function previewRedeem(uint256 shares) external view returns (uint256) {
-        return convertToAssets(shares);
+    function previewRedeem(uint256 shares) external view returns (uint256 amount) {
+        amount = convertToAssets(shares);
+        if (IERC20(asset).balanceOf(address(this)) < amount) {
+            revert("Vault/insufficient-liquidity");
+        }
     }
 
-    function previewWithdraw(uint256 assets) external view returns (uint256) {
-        return _divup(assets * RAY, nowChi());
+    function previewWithdraw(uint256 assets) external view returns (uint256 amount) {
+        amount = _divup(assets * RAY, nowChi());
+        if (IERC20(asset).balanceOf(address(this)) < amount) {
+            revert("Vault/insufficient-liquidity");
+        }
     }
 
     function totalAssets() public view returns (uint256) {
