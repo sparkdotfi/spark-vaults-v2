@@ -101,20 +101,16 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
         maxSsr = RAY;
     }
 
-    function _authorizeUpgrade(address newImplementation)
-        internal override onlyRole(DEFAULT_ADMIN_ROLE) {}
-
-    function getImplementation() external view returns (address) {
-        return ERC1967Utils.getImplementation();
-    }
+    // Only DEFAULT_ADMIN_ROLE can upgrade the implementation
+    function _authorizeUpgrade(address) internal view override onlyRole(DEFAULT_ADMIN_ROLE) {}
 
     /**********************************************************************************************/
     /*** Role-based external functions                                                          ***/
     /**********************************************************************************************/
 
     function setSsrBounds(uint256 minSsr_, uint256 maxSsr_) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(minSsr_ >= RAY,     "Vault/ssr-too-low");
-        require(maxSsr_ <= MAX_SSR, "Vault/ssr-too-high");
+        require(minSsr_ >= RAY,     "SparkVault/ssr-too-low");
+        require(maxSsr_ <= MAX_SSR, "SparkVault/ssr-too-high");
 
         emit SsrBoundsSet(minSsr, maxSsr, minSsr_, maxSsr_);
 
@@ -123,8 +119,8 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
     }
 
     function setSsr(uint256 data) external onlyRole(SETTER_ROLE) {
-        require(data >= minSsr, "Vault/ssr-too-low");
-        require(data <= maxSsr, "Vault/ssr-too-high");
+        require(data >= minSsr, "SparkVault/ssr-too-low");
+        require(data <= maxSsr, "SparkVault/ssr-too-high");
 
         drip();
         uint256 ssr_ = ssr;
@@ -173,9 +169,9 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
     }
 
     function transfer(address to, uint256 value) external returns (bool) {
-        require(to != address(0) && to != address(this), "Vault/invalid-address");
+        require(to != address(0) && to != address(this), "SparkVault/invalid-address");
         uint256 balance = balanceOf[msg.sender];
-        require(balance >= value, "Vault/insufficient-balance");
+        require(balance >= value, "SparkVault/insufficient-balance");
 
         // NOTE: Don't need an overflow check here b/c sum of all balances == totalSupply
         unchecked {
@@ -189,14 +185,14 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
     }
 
     function transferFrom(address from, address to, uint256 value) external returns (bool) {
-        require(to != address(0) && to != address(this), "Vault/invalid-address");
+        require(to != address(0) && to != address(this), "SparkVault/invalid-address");
         uint256 balance = balanceOf[from];
-        require(balance >= value, "Vault/insufficient-balance");
+        require(balance >= value, "SparkVault/insufficient-balance");
 
         if (from != msg.sender) {
             uint256 allowed = allowance[from][msg.sender];
             if (allowed != type(uint256).max) {
-                require(allowed >= value, "Vault/insufficient-allowance");
+                require(allowed >= value, "SparkVault/insufficient-allowance");
 
                 unchecked {
                     allowance[from][msg.sender] = allowed - value;
@@ -226,8 +222,8 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
         uint256 deadline,
         bytes memory signature
     ) public {
-        require(block.timestamp <= deadline, "Vault/permit-expired");
-        require(owner != address(0),         "Vault/invalid-owner");
+        require(block.timestamp <= deadline, "SparkVault/permit-expired");
+        require(owner != address(0),         "SparkVault/invalid-owner");
 
         uint256 nonce;
         unchecked { nonce = nonces[owner]++; }
@@ -246,7 +242,7 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
                 ))
             ));
 
-        require(_isValidSignature(owner, digest, signature), "Vault/invalid-permit");
+        require(_isValidSignature(owner, digest, signature), "SparkVault/invalid-permit");
 
         allowance[owner][spender] = value;
         emit Approval(owner, spender, value);
@@ -370,6 +366,10 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
         return totalAssets() - IERC20(asset).balanceOf(address(this));
     }
 
+    function getImplementation() external view returns (address) {
+        return ERC1967Utils.getImplementation();
+    }
+
     function nowChi() public view returns (uint256) {
         return (block.timestamp > rho) ? _rpow(ssr, block.timestamp - rho) * chi / RAY : chi;
     }
@@ -380,12 +380,12 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
 
     function _burn(uint256 assets, uint256 shares, address receiver, address owner) internal {
         uint256 balance = balanceOf[owner];
-        require(balance >= shares, "Vault/insufficient-balance");
+        require(balance >= shares, "SparkVault/insufficient-balance");
 
         if (owner != msg.sender) {
             uint256 allowed = allowance[owner][msg.sender];
             if (allowed != type(uint256).max) {
-                require(allowed >= shares, "Vault/insufficient-allowance");
+                require(allowed >= shares, "SparkVault/insufficient-allowance");
 
                 unchecked {
                     allowance[owner][msg.sender] = allowed - shares;
@@ -407,7 +407,7 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
     }
 
     function _mint(uint256 assets, uint256 shares, address receiver) internal {
-        require(receiver != address(0) && receiver != address(this), "Vault/invalid-address");
+        require(receiver != address(0) && receiver != address(this), "SparkVault/invalid-address");
 
         _pullAsset(msg.sender, assets);
 
@@ -427,7 +427,10 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
     }
 
     function _pushAsset(address to, uint256 value) internal {
-        require(value <= IERC20(asset).balanceOf(address(this)), "Vault/insufficient-liquidity");
+        require(
+            value <= IERC20(asset).balanceOf(address(this)),
+            "SparkVault/insufficient-liquidity"
+        );
         SafeERC20.safeTransfer(IERC20(asset), to, value);
     }
 

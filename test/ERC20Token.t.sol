@@ -15,7 +15,7 @@ contract ERC20TokenTests is SparkVaultTestBase, TokenFuzzChecks {
     }
 
     function testERC20() public {
-        checkBulkERC20(address(vault), "Vault", "Spark Savings USDC V2", "spUSDC", "1", 18);
+        checkBulkERC20(address(vault), "SparkVault", "Spark Savings USDC V2", "spUSDC", "1", 18);
     }
 
     function testERC20Fuzz(uint256 amount1, uint256 amount2, uint256 ssr, uint256 warpTime) public {
@@ -31,7 +31,7 @@ contract ERC20TokenTests is SparkVaultTestBase, TokenFuzzChecks {
 
         checkBulkERC20Fuzz({
             _token        : address(vault),
-            _contractName : "Vault",
+            _contractName : "SparkVault",
             from          : makeAddr("from"),
             to            : makeAddr("to"),
             amount1       : amount1,
@@ -40,7 +40,7 @@ contract ERC20TokenTests is SparkVaultTestBase, TokenFuzzChecks {
     }
 
     function testPermit() public {
-        checkBulkPermit(address(vault), "Vault");
+        checkBulkPermit(address(vault), "SparkVault");
     }
 
     function testPermitFuzz(
@@ -57,7 +57,7 @@ contract ERC20TokenTests is SparkVaultTestBase, TokenFuzzChecks {
 
         checkBulkPermitFuzz({
             _token        : address(vault),
-            _contractName : "Vault",
+            _contractName : "SparkVault",
             privKey       : privateKey,
             to            : makeAddr("to"),
             amount        : amount,
