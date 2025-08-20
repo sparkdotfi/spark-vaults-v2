@@ -20,6 +20,8 @@ contract SparkVaultInvariantTest is SparkVaultTestBase {
         targetContract(address(handler)); // Foundry will call only this contract's functions
     }
     function invariants() public {
+        inv_lastBalanceOf();
+        inv_lastAssetsOf();
         // inv_maxDeposit();
         // inv_maxMint();
         inv_maxRedeem();
@@ -29,6 +31,24 @@ contract SparkVaultInvariantTest is SparkVaultTestBase {
         inv_assetsOutstanding();
         inv_nowChi_eq_drip();
         inv_call_summary();
+    }
+
+    function inv_lastBalanceOf() internal view {
+        for (uint256 i = 0; i < handler.N(); i++) {
+            address user          = handler.users(i);
+            uint256 lastBalanceOf = handler.lastBalanceOf(user);
+            uint256 balanceOf     = vault.balanceOf(user);
+            assertEq(lastBalanceOf, balanceOf);
+        }
+    }
+
+    function inv_lastAssetsOf() internal view {
+        for (uint256 i = 0; i < handler.N(); i++) {
+            address user          = handler.users(i);
+            uint256 lastAssetsOf  = handler.lastAssetsOf(user);
+            uint256 assetsOf      = vault.assetsOf(user);
+            assertLe(lastAssetsOf, assetsOf);
+        }
     }
 
     // TODO: Decide what to do with this

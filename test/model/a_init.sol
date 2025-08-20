@@ -28,19 +28,14 @@ contract Init is Test {
     SparkVault vault;
 
     // Handler specific storage
+    mapping(bytes32 => uint256) public numCalls;
+
     uint256 public constant N = 5;
 
     address[N] public users;
 
-    mapping(bytes32 => uint256) public numCalls;
-
-    modifier useRandomUser(uint256 lpIndex) {
-        address user = users[_bound(lpIndex, 0, users.length - 1)];
-
-        vm.startPrank(user);
-        _;
-        vm.stopPrank();
-    }
+    mapping (address user => uint256 lastBalance) public lastBalanceOf;
+    mapping (address user => uint256 lastAssets) public lastAssetsOf;
 
     constructor(address _vault) {
         vault = SparkVault(_vault);
@@ -55,4 +50,9 @@ contract Init is Test {
         }
     }
 
+    function getRandomUser(uint256 userIndex) internal returns (address user) {
+        user = users[_bound(userIndex, 0, users.length - 1)];
+        vm.startPrank(user);
+        return user;
+    }
 }
