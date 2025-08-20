@@ -357,7 +357,7 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
             IERC20(asset).balanceOf(address(this)) >= assets,
             "SparkVault/insufficient-liquidity"
         );
-        return assets;
+        return _divup(assets * RAY, nowChi());
     }
 
     function totalAssets() public view returns (uint256) {
