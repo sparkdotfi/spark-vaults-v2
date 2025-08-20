@@ -52,16 +52,24 @@ contract DivupSuccessTests is MathTestBase {
     function fixtureDivision() public pure returns (TestCase[] memory testCases) {
         testCases = new TestCase[](10);
 
-        testCases[0] = TestCase({ x: 1, y: 1, expected: 1 });
-        testCases[1] = TestCase({ x: 1, y: 2, expected: 1 });
-        testCases[2] = TestCase({ x: 2, y: 2, expected: 1 });
-        testCases[3] = TestCase({ x: 2, y: 3, expected: 1 });
+        testCases[0] = TestCase({ x: 1,  y: 1, expected: 1 });
+        testCases[1] = TestCase({ x: 1,  y: 2, expected: 1 });
+        testCases[2] = TestCase({ x: 2,  y: 2, expected: 1 });
+        testCases[3] = TestCase({ x: 2,  y: 3, expected: 1 });
+        testCases[4] = TestCase({ x: 3,  y: 2, expected: 2 });
+        testCases[5] = TestCase({ x: 5,  y: 2, expected: 3 });
+        testCases[6] = TestCase({ x: 10, y: 3, expected: 4 });
 
-        testCases[4] = TestCase({ x: 1_000_000e6 * RAY, y: RAY + 1, expected: 1_000_000e6 });
+        testCases[7] = TestCase({ x: 1_000_000e6 * RAY, y: RAY + 1, expected: 1_000_000e6 });
+
+        testCases[8] = TestCase({ x: 1_000_000e6 * 1.05e27, y: RAY, expected: 1_000_000e6 });
+
+        testCases[9] = TestCase({ x: 1_000_000e6 * RAY, y: RAY - 1, expected: 1_000_000e6 });
+
     }
 
-    function table_divup_roundUp(TestCase memory testCase) public view {
-        assertEq(harness.divup(testCase.x, testCase.y), testCase.expected);
+    function table_divup_roundUp(TestCase memory division) public view {
+        assertEq(harness.divup(division.x, division.y), division.expected);
     }
 
 }
@@ -69,7 +77,7 @@ contract DivupSuccessTests is MathTestBase {
 contract RPowFailureTests is MathTestBase {
 
     function test_rpow_revertsOnOverflowOnSquareBoundary() public {
-        uint256 x = type(uint128).max + 1;  // Any x >= 2^128 will overflow on x*x.
+        uint256 x = type(uint128).max;  // Any x >= 2^128 will overflow on x*x.
         uint256 n = 2;                      // The loop starts with n := n/2, so use n=2 to ensure at least one iteration.
 
         vm.expectRevert();
