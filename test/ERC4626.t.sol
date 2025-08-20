@@ -79,58 +79,13 @@ contract SparkVaultERC4626StandardTest is ERC4626Test, SparkVaultTestBase {
         }
     }
 
-    function test_maxRedeem_liquidityLessThanAmount(Init memory init) public {
-        setUpVault(init);
-        address caller = init.user[0];
-        address owner  = init.user[1];
-
-        // Remove all liquidity from the vault
-        vm.startPrank(taker);
-        vault.take(IMockERC20(_underlying_).balanceOf(address(vault)));
-        vm.stopPrank();
-
-        // Redeem max amount should return 0
-        assertEq(vault.maxRedeem(owner), 0);
-    }
-
-    function test_maxWithdraw_liquidityLessThanAmount(Init memory init) public {
-        setUpVault(init);
-        address caller = init.user[0];
-        address owner  = init.user[1];
-
-        // Remove all liquidity from the vault
-        vm.startPrank(taker);
-        vault.take(IMockERC20(_underlying_).balanceOf(address(vault)));
-        vm.stopPrank();
-
-        // Withdraw max amount should return 0
-        assertEq(vault.maxWithdraw(owner), 0);
-    }
-
-    function test_previewWithdraw_revertsOverLiquidityBoundary() public {
-        setUpVault(init);
-        address caller   = init.user[0];
-        address receiver = init.user[1];
-        address owner    = init.user[2];
-        address other    = init.user[3];
-        assets = bound(assets, 1, 1_000_000_000e18 - 1);
-        _approve(_vault_, owner, caller, type(uint).max);
-
-        vm.startPrank(taker);
-        vault.take(IMockERC20(_underlying_).balanceOf(address(vault)));
-        vm.stopPrank();
-
-        vm.expectRevert("Vault/insufficient-liquidity");
-        vault.previewWithdraw(assets);
-    }
-
 }
 
 contract SparkVaultERC4626Test is SparkVaultTestBase {
 
     address user1 = makeAddr("user1");
 
-    // Do some deposits to get some non-zero state
+    // Do a deposit to get non-zero state
     function setUp() public override {
         super.setUp();
 
@@ -157,6 +112,8 @@ contract SparkVaultERC4626Test is SparkVaultTestBase {
 
         uint256 shares = vault.balanceOf(user1);
 
+        assertEq(shares, 1_000_000e6);
+
         // Take 1 wei of liquidity from the vault
         vm.prank(taker);
         vault.take(1);
@@ -171,6 +128,49 @@ contract SparkVaultERC4626Test is SparkVaultTestBase {
 
         // Redeem should now succeed
         vault.previewRedeem(shares);
+    }
+
+    function test_previewWithdraw_revertsOverLiquidityBoundary() public {
+        // Deal value accrued to the vault
+        deal(address(asset), address(this), 107.459782e6);
+        asset.transfer(address(vault), 107.459782e6);
+
+        uint256 assets = vault.assetsOf(user1);
+
+        assertEq(assets, 1_000_107.459782e6);
+
+        // Take 1 wei of liquidity from the vault
+        vm.prank(taker);
+        vault.take(1);
+
+        vm.expectRevert("SparkVault/insufficient-liquidity");
+        vault.previewWithdraw(assets);
+
+        // Transfer 1 wei of liquidity back to the vault
+        vm.prank(taker);
+        asset.transfer(address(vault), 1);
+
+        vault.previewWithdraw(assets);
+    }
+
+    function test_maxRedeem_liquidityLessThanAmount() public {
+        // Remove all liquidity from the vault
+        vm.startPrank(taker);
+        vault.take(asset.balanceOf(address(vault)));
+        vm.stopPrank();
+
+        // Redeem max amount should return 0
+        assertEq(vault.maxRedeem(user1), 0);
+    }
+
+    function test_maxWithdraw_liquidityLessThanAmount() public {
+        // Remove all liquidity from the vault
+        vm.startPrank(taker);
+        vault.take(asset.balanceOf(address(vault)));
+        vm.stopPrank();
+
+        // Withdraw max amount should return 0
+        assertEq(vault.maxWithdraw(user1), 0);
     }
 
 }

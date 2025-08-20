@@ -352,12 +352,12 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
         );
     }
 
-    function previewWithdraw(uint256 assets) external view returns (uint256 amount) {
-        amount = _divup(assets * RAY, nowChi());
+    function previewWithdraw(uint256 assets) external view returns (uint256) {
         require(
-            IERC20(asset).balanceOf(address(this)) >= amount,
+            IERC20(asset).balanceOf(address(this)) >= assets,
             "SparkVault/insufficient-liquidity"
         );
+        return assets;
     }
 
     function totalAssets() public view returns (uint256) {
