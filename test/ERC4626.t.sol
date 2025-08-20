@@ -85,6 +85,7 @@ contract SparkVaultERC4626Test is SparkVaultTestBase {
 
     address user1 = makeAddr("user1");
     address user2 = makeAddr("user2");
+    address user3 = makeAddr("user3");
 
     event Referral(uint16 indexed referral, address indexed owner, uint256 assets, uint256 shares);
 
@@ -118,7 +119,7 @@ contract SparkVaultERC4626Test is SparkVaultTestBase {
 
         deal(address(asset), user2, assets);
 
-        assertEq(vault.balanceOf(user2),          0);
+        assertEq(vault.balanceOf(user3),          0);
         assertEq(vault.totalSupply(),             1_000_000e6);
         assertEq(asset.balanceOf(user2),          assets);
         assertEq(asset.balanceOf(address(vault)), 1_000_000e6);
@@ -128,12 +129,12 @@ contract SparkVaultERC4626Test is SparkVaultTestBase {
         asset.approve(address(vault), assets);
 
         vm.expectEmit(true, true, false, true, address(vault));
-        emit Referral(referral, user2, assets, shares);
-        vault.deposit(assets, user2, referral);
+        emit Referral(referral, user3, assets, shares);
+        vault.deposit(assets, user3, referral);
 
         vm.stopPrank();
 
-        assertEq(vault.balanceOf(user2),          shares);
+        assertEq(vault.balanceOf(user3),          shares);
         assertEq(vault.totalSupply(),             1_000_000e6 + shares);
         assertEq(asset.balanceOf(user2),          0);
         assertEq(asset.balanceOf(address(vault)), 1_000_000e6 + assets);
@@ -149,7 +150,7 @@ contract SparkVaultERC4626Test is SparkVaultTestBase {
 
         deal(address(asset), user2, assets);
 
-        assertEq(vault.balanceOf(user2),          0);
+        assertEq(vault.balanceOf(user3),          0);
         assertEq(vault.totalSupply(),             1_000_000e6);
         assertEq(asset.balanceOf(user2),          assets);
         assertEq(asset.balanceOf(address(vault)), 1_000_000e6);
@@ -159,12 +160,12 @@ contract SparkVaultERC4626Test is SparkVaultTestBase {
         asset.approve(address(vault), assets);
 
         vm.expectEmit(true, true, false, true, address(vault));
-        emit Referral(referral, user2, assets, shares);
-        vault.mint(shares, user2, referral);
+        emit Referral(referral, user3, assets, shares);
+        vault.mint(shares, user3, referral);
 
         vm.stopPrank();
 
-        assertEq(vault.balanceOf(user2),          shares);
+        assertEq(vault.balanceOf(user3),          shares);
         assertEq(vault.totalSupply(),             1_000_000e6 + shares);
         assertEq(asset.balanceOf(user2),          0);
         assertEq(asset.balanceOf(address(vault)), 1_000_000e6 + assets);
