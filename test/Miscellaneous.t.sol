@@ -176,7 +176,7 @@ function test_assetsOutstanding_returnsZeroOverLiquidityBoundary() public {
 
         deal(address(asset), address(vault), totalAssets + 1);
 
-        // Should return 0 when totalAssets > liquidity
+        // Should return 0 when liquidity > totalAssets
         assertEq(vault.assetsOutstanding(), 0);
     }
 
