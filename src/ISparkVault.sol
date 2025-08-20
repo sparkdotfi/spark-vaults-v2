@@ -22,11 +22,44 @@ import { IERC20Permit } from "openzeppelin-contracts/contracts/token/ERC20/exten
 
 interface ISparkVault is IERC20Permit, IERC4626 {
 
-    // Events
+    /**
+     * @notice Emitted every time drip() is called.
+     * @param chi The new rate accumulator value after the drip operation [ray]
+     * @param diff The difference in total assets due to the rate accumulation [wei]
+     */
     event Drip(uint256 chi, uint256 diff);
+
+    /**
+     * @notice Emitted when assets are deposited or shares are minted with referral tracking
+     * @param referral The referral ID (16-bit) used for tracking user acquisition
+     * @param owner The address receiving the minted shares
+     * @param assets The amount of underlying assets deposited/minted
+     * @param shares The amount of vault shares minted to the owner
+     */
     event Referral(uint16 indexed referral, address indexed owner, uint256 assets, uint256 shares);
+    
+    /**
+     * @notice Emitted when the bounds for the Spark Savings Rate (SSR) are updated
+     * @param oldMinSsr The previous minimum allowed SSR value [ray]
+     * @param oldMaxSsr The previous maximum allowed SSR value [ray]
+     * @param newMinSsr The new minimum allowed SSR value [ray]
+     * @param newMaxSsr The new maximum allowed SSR value [ray]
+     */
     event SsrBoundsSet(uint256 oldMinSsr, uint256 oldMaxSsr, uint256 newMinSsr, uint256 newMaxSsr);
+    
+    /**
+     * @notice Emitted when the Spark Savings Rate (SSR) is updated
+     * @param sender The address that called setSsr() to update the rate
+     * @param oldSsr The previous SSR value before the update [ray]
+     * @param newSsr The new SSR value after the update [ray]
+     */
     event SsrSet(address indexed sender, uint256 oldSsr, uint256 newSsr);
+    
+    /**
+     * @notice Emitted when assets are withdrawn from the vault by accounts with TAKER_ROLE
+     * @param to The address receiving the withdrawn assets
+     * @param value The amount of assets withdrawn from the vault [wei]
+     */
     event Take(address indexed to, uint256 value);
 
     /**
@@ -79,7 +112,7 @@ interface ISparkVault is IERC20Permit, IERC4626 {
      * @param referral The referral ID (16-bit) for tracking
      * @return shares The amount of shares minted
      */
-    function deposit(uint256, address, uint16) external returns (uint256);
+    function deposit(uint256 assets, address receiver, uint16 referral) external returns (uint256 shares);
 
     /**
      * @notice Mints shares for assets
@@ -88,7 +121,7 @@ interface ISparkVault is IERC20Permit, IERC4626 {
      * @param referral The referral ID (16-bit) for tracking
      * @return assets The amount of assets required
      */
-    function mint(uint256, address, uint16) external returns (uint256);
+    function mint(uint256 shares, address receiver, uint16 referral) external returns (uint256 assets);
 
     /**
      * @notice Allows authorized accounts to withdraw assets from the vault
