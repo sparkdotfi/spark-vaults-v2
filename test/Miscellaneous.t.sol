@@ -109,6 +109,7 @@ contract SparkVaultConvenienceViewFunctionTests is SparkVaultTestBase {
         vm.startPrank(admin);
         vault.setSsrBounds(1e27, vault.MAX_SSR());
         vm.startPrank(setter);
+
         // 5% APY:
         // ❯ bc -l <<< 'scale=27; e( l(1.05)/(60 * 60 * 24 * 365) )'
         // 1.000000001547125957863212448
