@@ -19,4 +19,9 @@ runs = 10000
 [profile.master-ci.fuzz]
 runs = 500000
 
+[invariant]
+runs          = 10     # The number of times to run the invariant tests
+depth         = 200    # The number of calls to make in the invariant tests
+fail_on_error = true   # Fail the invariant test if an error occurs
+
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
