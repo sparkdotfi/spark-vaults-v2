@@ -29,21 +29,79 @@ interface ISparkVault is IERC20Permit, IERC4626 {
     event SsrSet(address indexed sender, uint256 oldSsr, uint256 newSsr);
     event Take(address indexed to, uint256 value);
 
-    // Valuation functions
+    /**
+     * @notice Returns the current rate accumulator (chi)
+     * @dev    Chi represents the cumulative growth factor for all shares. It starts at 1e27 (RAY) and
+     *         increases exponentially over time based on the Spark Savings Rate (SSR). The formula is:
+     *         chi = chi_old * (ssr)^(time_delta) / RAY where time_delta is the time since last drip.
+     *         User assets = user_shares * nowChi() / RAY
+     * @return The current rate accumulator value [ray]
+     */
     function chi() external view returns (uint192);
+
+    /**
+     * @notice Updates the rate accumulator and returns the new value
+     * @dev This function calculates the new chi value based on the time elapsed since the last drip
+     *      and the current SSR. The formula used is:
+     *      new_chi = old_chi * (ssr)^(block.timestamp - rho) / RAY
+     * @return nChi The new Chi value [ray]
+     */
     function drip() external returns (uint256);
+
+    /**
+     * @notice Returns the timestamp of the last drip operation
+     * @dev rho tracks when the rate accumulator was last updated.
+     * @return The timestamp of the last drip [unix epoch time]
+     */
     function rho() external view returns (uint64);
+
+    /**
+     * @notice Sets the Spark Savings Rate (SSR) within the configured bounds
+     * @dev    This function can only be called by accounts with SETTER_ROLE.
+     *         The SSR determines the rate at which user shares grow over time. A higher SSR
+     *         means faster share growth and higher yields for depositors.
+     * @param data The new SSR value [ray]
+     */
     function setSsr(uint256 data) external;
+
+    /**
+     * @notice Returns the current Spark Savings Rate (SSR)
+     * @dev The SSR is the rate at which the vault's shares appreciate in value over time.
+     *      It's expressed in ray (1e27).
+     * @return The current SSR value [ray]
+     */
     function ssr() external view returns (uint256);
 
-    // ERC4626 functions with referrals
+    /**
+     * @notice Deposits assets
+     * @param assets The amount of assets to deposit
+     * @param receiver The address to receive the minted shares
+     * @param referral The referral ID (16-bit) for tracking
+     * @return shares The amount of shares minted
+     */
     function deposit(uint256, address, uint16) external returns (uint256);
+
+    /**
+     * @notice Mints shares for assets
+     * @param shares The amount of shares to mint
+     * @param receiver The address to receive the minted shares
+     * @param referral The referral ID (16-bit) for tracking
+     * @return assets The amount of assets required
+     */
     function mint(uint256, address, uint16) external returns (uint256);
 
-    // Permissioned withdrawal function
+    /**
+     * @notice Allows authorized accounts to withdraw assets from the vault
+     * @dev    This function can only be called by accounts with TAKER_ROLE.
+     *         The function transfers the specified amount of assets to the caller.
+     * @param value The amount of assets to withdraw
+     */
     function take(uint256 value) external;
 
-    // Versioning function TODO: Do we need this?
+    /**
+     * @notice Returns the version of the vault implementation
+     * @return The version string
+     */
     function version() external view returns (string memory);
 
 }
