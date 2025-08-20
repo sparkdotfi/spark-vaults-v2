@@ -16,7 +16,7 @@ contract SparkVaultSetSsrBoundsFailureTests is SparkVaultTestBase {
 
     function test_setSsrBounds_belowRayBoundary() public {
         vm.startPrank(admin);
-        vm.expectRevert("Vault/ssr-too-low");
+        vm.expectRevert("SparkVault/ssr-too-low");
         vault.setSsrBounds(1e27 - 1, FOUR_PCT_SSR);
 
         vault.setSsrBounds(1e27, FOUR_PCT_SSR);
@@ -24,7 +24,7 @@ contract SparkVaultSetSsrBoundsFailureTests is SparkVaultTestBase {
 
     function test_setSsrBounds_aboveMaxSsrBoundary() public {
         vm.startPrank(admin);
-        vm.expectRevert("Vault/ssr-too-high");
+        vm.expectRevert("SparkVault/ssr-too-high");
         vault.setSsrBounds(1e27, MAX_SSR + 1);
 
         vault.setSsrBounds(1e27, MAX_SSR);
@@ -51,10 +51,9 @@ contract SparkVaultSetSsrBoundsSuccessTests is SparkVaultTestBase {
 
 }
 
-contract SparkVaultRoleManagementFailureTests is SparkVaultTestBase {
+contract SparkVaultGrantRoleFailureTests is SparkVaultTestBase {
 
     function test_grantRole_notAdmin() public {
-        // > Check for DEFAULT_ADMIN_ROLE, SETTER_ROLE, TAKER_ROLE
         bytes32[] memory roles = new bytes32[](3);
         roles[0] = DEFAULT_ADMIN_ROLE;
         roles[1] = SETTER_ROLE;
@@ -67,33 +66,13 @@ contract SparkVaultRoleManagementFailureTests is SparkVaultTestBase {
                 address(this),
                 DEFAULT_ADMIN_ROLE
             ));
-            // >> Action
             vault.grantRole(role, address(0x1234));
-        }
-    }
-
-    function test_revokeRole_notAdmin() public {
-        // > Check for DEFAULT_ADMIN_ROLE, SETTER_ROLE, TAKER_ROLE
-        bytes32[] memory roles = new bytes32[](3);
-        roles[0] = DEFAULT_ADMIN_ROLE;
-        roles[1] = SETTER_ROLE;
-        roles[2] = TAKER_ROLE;
-
-        for (uint256 i = 0; i < roles.length; i++) {
-            bytes32 role = roles[i];
-            vm.expectRevert(abi.encodeWithSignature(
-                "AccessControlUnauthorizedAccount(address,bytes32)",
-                address(this),
-                DEFAULT_ADMIN_ROLE
-            ));
-            // >> Action
-            vault.revokeRole(role, address(0x1234));
         }
     }
 
 }
 
-contract SparkVaultRoleManagementSuccessTests is SparkVaultTestBase {
+contract SparkVaultGrantRoleSuccessTests is SparkVaultTestBase {
 
     event RoleGranted(bytes32 indexed role, address indexed account, address indexed sender);
     event RoleRevoked(bytes32 indexed role, address indexed account, address indexed sender);
@@ -104,72 +83,79 @@ contract SparkVaultRoleManagementSuccessTests is SparkVaultTestBase {
         roles[1] = SETTER_ROLE;
         roles[2] = TAKER_ROLE;
 
-        // > admin (DEFAULT_ADMIN_ROLE) should be allowed to grant DEFAULT_ADMIN_ROLE, SETTER_ROLE,
-        // > TAKER_ROLE.
-        // >> Prank
+        // admin (DEFAULT_ADMIN_ROLE) should be allowed to grant DEFAULT_ADMIN_ROLE, SETTER_ROLE,
+        // TAKER_ROLE.
         vm.startPrank(admin);
         for (uint256 i = 0; i < roles.length; i++) {
             bytes32 role = roles[i];
+            assertFalse(vault.hasRole(role, address(0x1234)));
+
             vm.expectEmit(address(vault));
             emit RoleGranted(role, address(0x1234), admin);
-            // >> Action
             vault.grantRole(role, address(0x1234));
 
-            // >> Check role was granted
-            assertTrue(vault.hasRole(role, address(0x1234)), "Role not granted");
-            // >> Check role admin is still DEFAULT_ADMIN_ROLE
-            assertTrue(vault.getRoleAdmin(role) == DEFAULT_ADMIN_ROLE, "Role admin changed.");
+            assertTrue(vault.hasRole(role, address(0x1234)));
+
+            // Check role admin hasn't changed
+            assertTrue(vault.getRoleAdmin(role) == DEFAULT_ADMIN_ROLE);
         }
 
-        // >> Check that our admin in still DEFAULT_ADMIN_ROLE
-        assertTrue(vault.hasRole(DEFAULT_ADMIN_ROLE, admin), "Admin lost DEFAULT_ADMIN_ROLE");
+        // Check that our admin in still DEFAULT_ADMIN_ROLE
+        assertTrue(vault.hasRole(DEFAULT_ADMIN_ROLE, admin));
     }
 
-    function test_revokeRole() public {
-        // > Each role has an admin role, by default DEFAULT_ADMIN_ROLE is the admin for all roles
-        // > (including itself). `admin` is a member of that role, so by default cannot set or take,
-        // > but can assign setters and takers. We set 0x1234 to be all three roles, then revoke
-        // > them. `admin` should still have DEEFAULT_ADMIN_ROLE at the end.
-        //                           ┌ ─ ─ ─ ─ ─ ┐
-        //
-        //                           │           │
-        //                 ┌──────────────────┐
-        // admin  ────────▶│DEFAULT_ADMIN_ROLE│◀─┼─┐
-        //              │  └──────────────────┘    │
-        //                 ┌──────────────────┐  │ │
-        //              └ ─│   SETTER_ROLE    │◀───┼─────0x1234
-        //                 └──────────────────┘  │ │
-        //                 ┌──────────────────┐    │
-        //                 │    TAKER_ROLE    │◀─┴─┘
-        //                 └──────────────────┘
+}
+
+contract SparkVaultRevokeRoleFailureTests is SparkVaultTestBase {
+
+    function test_revokeRole_notAdmin() public {
         bytes32[] memory roles = new bytes32[](3);
         roles[0] = DEFAULT_ADMIN_ROLE;
         roles[1] = SETTER_ROLE;
         roles[2] = TAKER_ROLE;
 
-        // > admin (DEFAULT_ADMIN_ROLE) should be allowed to revoke DEFAULT_ADMIN_ROLE, SETTER_ROLE,
-        // > TAKER_ROLE.
+        for (uint256 i = 0; i < roles.length; i++) {
+            bytes32 role = roles[i];
+            vm.expectRevert(abi.encodeWithSignature(
+                "AccessControlUnauthorizedAccount(address,bytes32)",
+                address(this),
+                DEFAULT_ADMIN_ROLE
+            ));
+            vault.revokeRole(role, address(0x1234));
+        }
+    }
 
-        // >> First, call test_grantRole()
+}
+
+contract SparkVaultRevokeRoleSuccessTests is SparkVaultGrantRoleSuccessTests {
+
+    function test_revokeRole() public {
+        bytes32[] memory roles = new bytes32[](3);
+        roles[0] = DEFAULT_ADMIN_ROLE;
+        roles[1] = SETTER_ROLE;
+        roles[2] = TAKER_ROLE;
+
+        // First, call test_grantRole()
         test_grantRole();
 
-        // >> Prank
         vm.startPrank(admin);
         for (uint256 i = 0; i < roles.length; i++) {
             bytes32 role = roles[i];
+
+            assertTrue(vault.hasRole(role, address(0x1234)));
+
             vm.expectEmit(address(vault));
             emit RoleRevoked(role, address(0x1234), admin);
-            // >> Action
             vault.revokeRole(role, address(0x1234));
 
-            // >> Check role was revoked
-            assertFalse(vault.hasRole(role, address(0x1234)), "Role not granted");
-            // >> Check role admin is still DEFAULT_ADMIN_ROLE
-            assertTrue(vault.getRoleAdmin(role) == DEFAULT_ADMIN_ROLE, "Role admin changed.");
+            assertFalse(vault.hasRole(role, address(0x1234)));
+
+            // Check role admin hasn't changed
+            assertTrue(vault.getRoleAdmin(role) == DEFAULT_ADMIN_ROLE);
         }
 
-        // >> Check that our admin in still DEFAULT_ADMIN_ROLE
-        assertTrue(vault.hasRole(DEFAULT_ADMIN_ROLE, admin), "Admin lost DEFAULT_ADMIN_ROLE");
+        // Check that our admin in still DEFAULT_ADMIN_ROLE
+        assertTrue(vault.hasRole(DEFAULT_ADMIN_ROLE, admin));
     }
 
 }
@@ -187,7 +173,7 @@ contract SparkVaultSetSsrFailureTests is SparkVaultTestBase {
 
     function test_setSsr_belowMinSsrBoundary() public {
         vm.startPrank(setter);
-        vm.expectRevert("Vault/ssr-too-low");
+        vm.expectRevert("SparkVault/ssr-too-low");
         vault.setSsr(1e27 - 1);
 
         vault.setSsr(1e27);  // Min is 1e27 on deployment
@@ -198,7 +184,7 @@ contract SparkVaultSetSsrFailureTests is SparkVaultTestBase {
         vault.setSsrBounds(ONE_PCT_SSR, FOUR_PCT_SSR);
 
         vm.startPrank(setter);
-        vm.expectRevert("Vault/ssr-too-low");
+        vm.expectRevert("SparkVault/ssr-too-low");
         vault.setSsr(ONE_PCT_SSR - 1);
 
         vault.setSsr(ONE_PCT_SSR);
@@ -206,7 +192,7 @@ contract SparkVaultSetSsrFailureTests is SparkVaultTestBase {
 
     function test_setSsr_aboveMaxSsrBoundary() public {
         vm.startPrank(setter);
-        vm.expectRevert("Vault/ssr-too-high");
+        vm.expectRevert("SparkVault/ssr-too-high");
         vault.setSsr(1e27 + 1);  // Can't set SSR until admin sets bounds
 
         vault.setSsr(1e27);  // Max is 1e27 on deployment
@@ -217,7 +203,7 @@ contract SparkVaultSetSsrFailureTests is SparkVaultTestBase {
         vault.setSsrBounds(ONE_PCT_SSR, FOUR_PCT_SSR);
 
         vm.startPrank(setter);
-        vm.expectRevert("Vault/ssr-too-high");
+        vm.expectRevert("SparkVault/ssr-too-high");
         vault.setSsr(FOUR_PCT_SSR + 1);
 
         vault.setSsr(FOUR_PCT_SSR);
