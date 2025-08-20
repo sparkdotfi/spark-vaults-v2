@@ -84,6 +84,45 @@ contract SparkVaultMintFailureTests is SparkVaultTestBase {
 
 }
 
+contract SparkVaultMintSuccessTests is SparkVaultTestBase {
+
+    address user1 = makeAddr("user1");
+
+    function setUp() public override {
+        super.setUp();
+
+        vm.prank(admin);
+        vault.setSsrBounds(ONE_PCT_SSR, FOUR_PCT_SSR);
+
+        vm.prank(setter);
+        vault.setSsr(FOUR_PCT_SSR);
+    }
+
+    function test_mint() public {
+        deal(address(asset), user1, 1_000_000e6);
+
+        assertEq(vault.totalSupply(),             0);
+        assertEq(vault.balanceOf(user1),          0);
+        assertEq(vault.assetsOf(user1),           0);
+        assertEq(vault.totalAssets(),             0);
+        assertEq(asset.balanceOf(address(vault)), 0);
+        assertEq(asset.balanceOf(user1),          1_000_000e6);
+
+        vm.startPrank(user1);
+        asset.approve(address(vault), 1_000_000e6);
+        vault.deposit(1_000_000e6, user1);
+        vm.stopPrank();
+
+        assertEq(vault.totalSupply(),             1_000_000e6);
+        assertEq(vault.balanceOf(user1),          1_000_000e6);
+        assertEq(vault.assetsOf(user1),           1_000_000e6);
+        assertEq(vault.totalAssets(),             1_000_000e6);
+        assertEq(asset.balanceOf(address(vault)), 1_000_000e6);
+        assertEq(asset.balanceOf(user1),          0);
+    }
+
+}
+
 contract SparkVaultBurntFailureTests is SparkVaultTestBase {
 
     address user1 = makeAddr("user1");
@@ -125,6 +164,90 @@ contract SparkVaultBurntFailureTests is SparkVaultTestBase {
         vm.prank(makeAddr("random"));
         vm.expectRevert("SparkVault/insufficient-allowance");
         vault.withdraw(assets, user1, user1);
+    }
+
+}
+
+contract SparkVaultBurnSuccessTests is SparkVaultTestBase {
+
+    address user1 = makeAddr("user1");
+
+    function setUp() public override {
+        super.setUp();
+
+        vm.prank(admin);
+        vault.setSsrBounds(ONE_PCT_SSR, FOUR_PCT_SSR);
+
+        vm.prank(setter);
+        vault.setSsr(FOUR_PCT_SSR);
+
+        deal(address(asset), user1, 1_000_000e6);
+
+        vm.startPrank(user1);
+        asset.approve(address(vault), 1_000_000e6);
+        vault.deposit(1_000_000e6, user1);
+        vm.stopPrank();
+
+        skip(1 days);
+    }
+
+    function test_burn() public {
+        uint256 assets = vault.assetsOf(user1);
+
+        assertEq(assets, 1_000_107.459782e6);
+
+        // Deal value accrued to the vault
+        deal(address(asset), address(this), 107.459782e6);
+        asset.transfer(address(vault), 107.459782e6);
+
+        assertEq(vault.totalSupply(),             1_000_000e6);
+        assertEq(vault.balanceOf(user1),          1_000_000e6);
+        assertEq(vault.assetsOf(user1),           assets);
+        assertEq(vault.totalAssets(),             assets);
+        assertEq(asset.balanceOf(address(vault)), assets);
+        assertEq(asset.balanceOf(user1),          0);
+
+        vm.prank(user1);
+        vault.withdraw(assets, user1, user1);
+
+        assertEq(vault.totalSupply(),             0);
+        assertEq(vault.balanceOf(user1),          0);
+        assertEq(vault.assetsOf(user1),           0);
+        assertEq(vault.totalAssets(),             0);
+        assertEq(asset.balanceOf(address(vault)), 0);
+        assertEq(asset.balanceOf(user1),          assets);
+    }
+
+    function test_burn_msgSenderNotOwner() public {
+        address random = makeAddr("random");
+
+        uint256 assets = vault.assetsOf(user1);
+
+        assertEq(assets, 1_000_107.459782e6);
+
+        // Deal value accrued to the vault
+        deal(address(asset), address(this), 107.459782e6);
+        asset.transfer(address(vault), 107.459782e6);
+
+        assertEq(vault.totalSupply(),             1_000_000e6);
+        assertEq(vault.balanceOf(user1),          1_000_000e6);
+        assertEq(vault.assetsOf(user1),           assets);
+        assertEq(vault.totalAssets(),             assets);
+        assertEq(asset.balanceOf(address(vault)), assets);
+        assertEq(asset.balanceOf(user1),          0);
+
+        vm.prank(user1);
+        vault.approve(random, 1_000_000e6);
+
+        vm.prank(random);
+        vault.withdraw(assets, user1, user1);
+
+        assertEq(vault.totalSupply(),             0);
+        assertEq(vault.balanceOf(user1),          0);
+        assertEq(vault.assetsOf(user1),           0);
+        assertEq(vault.totalAssets(),             0);
+        assertEq(asset.balanceOf(address(vault)), 0);
+        assertEq(asset.balanceOf(user1),          assets);
     }
 
 }
