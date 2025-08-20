@@ -172,3 +172,375 @@ contract SparkVaultERC4626Test is SparkVaultTestBase {
     }
 
 }
+
+contract SparkVaultDepositFailureTests is SparkVaultTestBase {
+
+    function test_deposit_revertsReceiverZeroAddress() public {
+        uint256 amount = 1_000_000e6;
+        vm.expectRevert("SparkVault/invalid-address");
+        vault.deposit(amount, address(0));
+    }
+
+    function test_deposit_revertsReceiverVault() public {
+        uint256 amount = 1_000_000e6;
+        vm.expectRevert("SparkVault/invalid-address");
+        vault.deposit(amount, address(vault));
+    }
+
+}
+
+contract SparkVaultDepositSuccessTests is SparkVaultTestBase {
+
+    address user1 = makeAddr("user1");
+
+    function setUp() public override {
+        super.setUp();
+
+        vm.prank(admin);
+        vault.setSsrBounds(ONE_PCT_SSR, FOUR_PCT_SSR);
+
+        vm.prank(setter);
+        vault.setSsr(FOUR_PCT_SSR);
+    }
+
+    function test_deposit() public {
+        uint256 amount = 1_000_000e6;
+
+        deal(address(asset), user1, amount);
+
+        assertEq(vault.totalSupply(),             0);
+        assertEq(vault.balanceOf(user1),          0);
+        assertEq(vault.assetsOf(user1),           0);
+        assertEq(vault.totalAssets(),             0);
+        assertEq(asset.balanceOf(address(vault)), 0);
+        assertEq(asset.balanceOf(user1),          amount);
+
+        vm.startPrank(user1);
+        asset.approve(address(vault), amount);
+        vault.deposit(amount, user1);
+        vm.stopPrank();
+
+        assertEq(vault.totalSupply(),             amount);
+        assertEq(vault.balanceOf(user1),          amount);
+        assertEq(vault.assetsOf(user1),           amount);
+        assertEq(vault.totalAssets(),             amount);
+        assertEq(asset.balanceOf(address(vault)), amount);
+        assertEq(asset.balanceOf(user1),          0);
+    }
+
+}
+
+contract SparkVaultMintFailureTests is SparkVaultTestBase {
+
+    function test_mint_revertsReceiverZeroAddress() public {
+        uint256 shares = 1_000_000e6;
+        vm.expectRevert("SparkVault/invalid-address");
+        vault.mint(shares, address(0));
+    }
+
+    function test_deposit_revertsReceiverVault() public {
+        uint256 shares = 1_000_000e6;
+        vm.expectRevert("SparkVault/invalid-address");
+        vault.mint(shares, address(vault));
+    }
+
+}
+
+contract SparkVaultMintSuccessTests is SparkVaultTestBase {
+
+    address user1 = makeAddr("user1");
+
+    function setUp() public override {
+        super.setUp();
+
+        vm.prank(admin);
+        vault.setSsrBounds(ONE_PCT_SSR, FOUR_PCT_SSR);
+
+        vm.prank(setter);
+        vault.setSsr(FOUR_PCT_SSR);
+    }
+
+    function test_mint() public {
+        uint256 amount = 1_000_000e6;
+
+        deal(address(asset), user1, amount);
+
+        assertEq(vault.totalSupply(),             0);
+        assertEq(vault.balanceOf(user1),          0);
+        assertEq(vault.assetsOf(user1),           0);
+        assertEq(vault.totalAssets(),             0);
+        assertEq(asset.balanceOf(address(vault)), 0);
+        assertEq(asset.balanceOf(user1),          amount);
+
+        vm.startPrank(user1);
+        asset.approve(address(vault), amount);
+        vault.mint(amount, user1);
+        vm.stopPrank();
+
+        assertEq(vault.totalSupply(),             amount);
+        assertEq(vault.balanceOf(user1),          amount);
+        assertEq(vault.assetsOf(user1),           amount);
+        assertEq(vault.totalAssets(),             amount);
+        assertEq(asset.balanceOf(address(vault)), amount);
+        assertEq(asset.balanceOf(user1),          0);
+    }
+
+}
+
+contract SparkVaultWithdrawFailureTests is SparkVaultTestBase {
+
+    address user1 = makeAddr("user1");
+
+    function setUp() public override {
+        super.setUp();
+
+        vm.prank(admin);
+        vault.setSsrBounds(ONE_PCT_SSR, FOUR_PCT_SSR);
+
+        vm.prank(setter);
+        vault.setSsr(FOUR_PCT_SSR);
+
+        deal(address(asset), user1, 1_000_000e6);
+
+        vm.startPrank(user1);
+        asset.approve(address(vault), 1_000_000e6);
+        vault.deposit(1_000_000e6, user1);
+        vm.stopPrank();
+
+        skip(1 days);
+    }
+
+    function test_withdraw_revertsInsufficientBalance() public {
+        uint256 assets = vault.assetsOf(user1);
+
+        assertEq(assets, 1_000_107.459782e6);
+
+        vm.prank(user1);
+        vm.expectRevert("SparkVault/insufficient-balance");
+        vault.withdraw(assets + 1, user1, user1);
+    }
+
+    function test_withdraw_revertsInsufficientAllowance() public {
+        uint256 assets = vault.assetsOf(user1);
+
+        assertEq(assets, 1_000_107.459782e6);
+
+        vm.prank(makeAddr("random"));
+        vm.expectRevert("SparkVault/insufficient-allowance");
+        vault.withdraw(assets, user1, user1);
+    }
+
+}
+
+contract SparkVaultWithdrawSuccessTests is SparkVaultTestBase {
+
+    address user1 = makeAddr("user1");
+
+    function setUp() public override {
+        super.setUp();
+
+        vm.prank(admin);
+        vault.setSsrBounds(ONE_PCT_SSR, FOUR_PCT_SSR);
+
+        vm.prank(setter);
+        vault.setSsr(FOUR_PCT_SSR);
+
+        deal(address(asset), user1, 1_000_000e6);
+
+        vm.startPrank(user1);
+        asset.approve(address(vault), 1_000_000e6);
+        vault.deposit(1_000_000e6, user1);
+        vm.stopPrank();
+
+        skip(1 days);
+    }
+
+    function test_withdraw() public {
+        uint256 assets = vault.assetsOf(user1);
+
+        assertEq(assets, 1_000_107.459782e6);
+
+        // Deal value accrued to the vault
+        deal(address(asset), address(vault), 1_000_107.459782e6);
+
+        assertEq(vault.totalSupply(),             1_000_000e6);
+        assertEq(vault.balanceOf(user1),          1_000_000e6);
+        assertEq(vault.assetsOf(user1),           assets);
+        assertEq(vault.totalAssets(),             assets);
+        assertEq(asset.balanceOf(address(vault)), assets);
+        assertEq(asset.balanceOf(user1),          0);
+
+        vm.prank(user1);
+        vault.withdraw(assets, user1, user1);
+
+        assertEq(vault.totalSupply(),             0);
+        assertEq(vault.balanceOf(user1),          0);
+        assertEq(vault.assetsOf(user1),           0);
+        assertEq(vault.totalAssets(),             0);
+        assertEq(asset.balanceOf(address(vault)), 0);
+        assertEq(asset.balanceOf(user1),          assets);
+    }
+
+    function test_withdraw_msgSenderNotOwner() public {
+        address random = makeAddr("random");
+
+        uint256 assets = vault.assetsOf(user1);
+
+        assertEq(assets, 1_000_107.459782e6);
+
+        // Deal value accrued to the vault
+        deal(address(asset), address(vault), 1_000_107.459782e6);
+
+        assertEq(vault.totalSupply(),             1_000_000e6);
+        assertEq(vault.balanceOf(user1),          1_000_000e6);
+        assertEq(vault.assetsOf(user1),           assets);
+        assertEq(vault.totalAssets(),             assets);
+        assertEq(asset.balanceOf(address(vault)), assets);
+        assertEq(asset.balanceOf(user1),          0);
+
+        vm.prank(user1);
+        vault.approve(random, 1_000_000e6);
+
+        vm.prank(random);
+        vault.withdraw(assets, user1, user1);
+
+        assertEq(vault.totalSupply(),             0);
+        assertEq(vault.balanceOf(user1),          0);
+        assertEq(vault.assetsOf(user1),           0);
+        assertEq(vault.totalAssets(),             0);
+        assertEq(asset.balanceOf(address(vault)), 0);
+        assertEq(asset.balanceOf(user1),          assets);
+    }
+
+}
+
+contract SparkVaultRedeemFailureTests is SparkVaultTestBase {
+
+    address user1 = makeAddr("user1");
+
+    function setUp() public override {
+        super.setUp();
+
+        vm.prank(admin);
+        vault.setSsrBounds(ONE_PCT_SSR, FOUR_PCT_SSR);
+
+        vm.prank(setter);
+        vault.setSsr(FOUR_PCT_SSR);
+
+        deal(address(asset), user1, 1_000_000e6);
+
+        vm.startPrank(user1);
+        asset.approve(address(vault), 1_000_000e6);
+        vault.deposit(1_000_000e6, user1);
+        vm.stopPrank();
+
+        skip(1 days);
+    }
+
+    function test_redeem_revertsInsufficientBalance() public {
+        uint256 shares = vault.balanceOf(user1);
+
+        assertEq(shares, 1_000_000e6);
+
+        vm.prank(user1);
+        vm.expectRevert("SparkVault/insufficient-balance");
+        vault.redeem(shares + 1, user1, user1);
+    }
+
+    function test_redeem_revertsInsufficientAllowance() public {
+        uint256 shares = vault.balanceOf(user1);
+
+        assertEq(shares, 1_000_000e6);
+
+        vm.prank(makeAddr("random"));
+        vm.expectRevert("SparkVault/insufficient-allowance");
+        vault.redeem(shares, user1, user1);
+    }
+
+}
+
+contract SparkVaultRedeemSuccessTests is SparkVaultTestBase {
+
+    address user1 = makeAddr("user1");
+
+    function setUp() public override {
+        super.setUp();
+
+        vm.prank(admin);
+        vault.setSsrBounds(ONE_PCT_SSR, FOUR_PCT_SSR);
+
+        vm.prank(setter);
+        vault.setSsr(FOUR_PCT_SSR);
+
+        deal(address(asset), user1, 1_000_000e6);
+
+        vm.startPrank(user1);
+        asset.approve(address(vault), 1_000_000e6);
+        vault.deposit(1_000_000e6, user1);
+        vm.stopPrank();
+
+        skip(1 days);
+    }
+
+    function test_redeem() public {
+        uint256 shares = vault.balanceOf(user1);
+        uint256 assets = vault.assetsOf(user1);
+
+        assertEq(shares, 1_000_000e6);
+        assertEq(assets, 1_000_107.459782e6);
+
+        // Deal value accrued to the vault
+        deal(address(asset), address(vault), 1_000_107.459782e6);
+
+        assertEq(vault.totalSupply(),             1_000_000e6);
+        assertEq(vault.balanceOf(user1),          shares);
+        assertEq(vault.assetsOf(user1),           assets);
+        assertEq(vault.totalAssets(),             assets);
+        assertEq(asset.balanceOf(address(vault)), assets);
+        assertEq(asset.balanceOf(user1),          0);
+
+        vm.prank(user1);
+        vault.redeem(shares, user1, user1);
+
+        assertEq(vault.totalSupply(),             0);
+        assertEq(vault.balanceOf(user1),          0);
+        assertEq(vault.assetsOf(user1),           0);
+        assertEq(vault.totalAssets(),             0);
+        assertEq(asset.balanceOf(address(vault)), 0);
+        assertEq(asset.balanceOf(user1),          assets);
+    }
+
+    function test_redeem_msgSenderNotOwner() public {
+        address random = makeAddr("random");
+
+        uint256 shares = vault.balanceOf(user1);
+        uint256 assets = vault.assetsOf(user1);
+
+        assertEq(shares, 1_000_000e6);
+        assertEq(assets, 1_000_107.459782e6);
+
+        // Deal value accrued to the vault
+        deal(address(asset), address(vault), 1_000_107.459782e6);
+
+        assertEq(vault.totalSupply(),             1_000_000e6);
+        assertEq(vault.balanceOf(user1),          1_000_000e6);
+        assertEq(vault.assetsOf(user1),           assets);
+        assertEq(vault.totalAssets(),             assets);
+        assertEq(asset.balanceOf(address(vault)), assets);
+        assertEq(asset.balanceOf(user1),          0);
+
+        vm.prank(user1);
+        vault.approve(random, 1_000_000e6);
+
+        vm.prank(random);
+        vault.redeem(shares, user1, user1);
+
+        assertEq(vault.totalSupply(),             0);
+        assertEq(vault.balanceOf(user1),          0);
+        assertEq(vault.assetsOf(user1),           0);
+        assertEq(vault.totalAssets(),             0);
+        assertEq(asset.balanceOf(address(vault)), 0);
+        assertEq(asset.balanceOf(user1),          assets);
+    }
+
+}
