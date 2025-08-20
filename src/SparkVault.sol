@@ -16,8 +16,6 @@ interface IERC1271 {
     function isValidSignature(bytes32, bytes memory) external view returns (bytes4);
 }
 
-import { console2 } from "forge-std/console2.sol";
-
 /*
 
   ███████╗██████╗  █████╗ ██████╗ ██╗  ██╗    ██╗   ██╗ █████╗ ██╗   ██╗██╗  ████████╗

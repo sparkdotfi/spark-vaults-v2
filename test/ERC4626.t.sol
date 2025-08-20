@@ -87,6 +87,8 @@ contract SparkVaultERC4626Test is SparkVaultTestBase {
     address user2 = makeAddr("user2");
     address user3 = makeAddr("user3");
 
+    uint256 totalAssets;
+
     event Referral(uint16 indexed referral, address indexed owner, uint256 assets, uint256 shares);
 
     // Do a deposit to get non-zero state
@@ -107,12 +109,13 @@ contract SparkVaultERC4626Test is SparkVaultTestBase {
         vm.stopPrank();
 
         skip(1 days);
+
+        totalAssets = vault.totalAssets();
     }
 
     function test_previewRedeem_revertsOverLiquidityBoundary() public {
         // Deal value accrued to the vault
-        deal(address(asset), address(this), 107.459782e6);
-        asset.transfer(address(vault), 107.459782e6);
+        deal(address(asset), address(vault), totalAssets);
 
         uint256 shares = vault.balanceOf(user1);
 
@@ -136,12 +139,11 @@ contract SparkVaultERC4626Test is SparkVaultTestBase {
 
     function test_previewWithdraw_revertsOverLiquidityBoundary() public {
         // Deal value accrued to the vault
-        deal(address(asset), address(this), 107.459782e6);
-        asset.transfer(address(vault), 107.459782e6);
+        deal(address(asset), address(vault), totalAssets);
 
         uint256 assets = vault.assetsOf(user1);
 
-        assertEq(assets, 1_000_107.459782e6);
+        assertEq(assets, totalAssets);
 
         // Take 1 wei of liquidity from the vault
         vm.prank(taker);
@@ -158,6 +160,25 @@ contract SparkVaultERC4626Test is SparkVaultTestBase {
     }
 
     function test_maxRedeem_liquidityLessThanAmount() public {
+        // Deal value accrued to the vault
+        deal(address(asset), address(vault), totalAssets);
+
+        uint256 maxRedeemFull = vault.maxRedeem(user1);
+
+        assertEq(maxRedeemFull, 1_000_000e6);
+
+        // Remove most liquidity but leave some (e.g., 10% of what user1 can withdraw)
+        uint256 liquidityToRemove = maxRedeemFull * 9 / 10; // Remove 90% of liquidity
+        vm.startPrank(taker);
+        vault.take(liquidityToRemove);
+        vm.stopPrank();
+
+        // User should still be able to redeem
+        uint256 maxRedeemPartial = vault.maxRedeem(user1);
+
+        assertEq(maxRedeemPartial, 100_096.703413e6);
+        assertEq(maxRedeemPartial, vault.previewWithdraw(asset.balanceOf(address(vault))));
+
         // Remove all liquidity from the vault
         vm.startPrank(taker);
         vault.take(asset.balanceOf(address(vault)));
@@ -168,6 +189,22 @@ contract SparkVaultERC4626Test is SparkVaultTestBase {
     }
 
     function test_maxWithdraw_liquidityLessThanAmount() public {
+        uint256 maxWithdrawFull = vault.maxWithdraw(user1);
+
+        assertEq(maxWithdrawFull, 1_000_000e6);
+
+        // Remove most liquidity but leave some (e.g., 10% of what user1 can withdraw)
+        uint256 liquidityToRemove = maxWithdrawFull * 9 / 10; // Remove 90% of liquidity
+        vm.startPrank(taker);
+        vault.take(liquidityToRemove);
+        vm.stopPrank();
+
+        // User should still be able to withdraw the remaining liquidity
+        uint256 maxWithdrawPartial = vault.maxWithdraw(user1);
+
+        assertEq(maxWithdrawPartial, maxWithdrawFull - liquidityToRemove);
+        assertEq(maxWithdrawPartial, asset.balanceOf(address(vault)));
+
         // Remove all liquidity from the vault
         vm.startPrank(taker);
         vault.take(asset.balanceOf(address(vault)));
@@ -175,6 +212,8 @@ contract SparkVaultERC4626Test is SparkVaultTestBase {
 
         // Withdraw max amount should return 0
         assertEq(vault.maxWithdraw(user1), 0);
+    }
+
     function test_depositWithReferral() public {
         uint16 referral = 1;
 
@@ -235,6 +274,6 @@ contract SparkVaultERC4626Test is SparkVaultTestBase {
         assertEq(vault.totalSupply(),             1_000_000e6 + shares);
         assertEq(asset.balanceOf(user2),          0);
         assertEq(asset.balanceOf(address(vault)), 1_000_000e6 + assets);
-}
+    }
 
 }
