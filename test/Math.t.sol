@@ -2,19 +2,18 @@
 pragma solidity >=0.8.0;
 
 import { stdError } from "forge-std/Test.sol";
-import { console2 } from "forge-std/console2.sol";
 
 import "./TestBase.t.sol";
 
-import { SparkVault } from "../src/SparkVault.sol";
+import { SparkVault } from "src/SparkVault.sol";
 
 contract SparkVaultHarness is SparkVault {
 
-    function divup(uint256 x, uint256 y) public pure returns (uint256 z) {
+    function divup(uint256 x, uint256 y) public pure returns (uint256) {
         return super._divup(x, y);
     }
 
-    function rpow(uint256 x, uint256 n) public pure returns (uint256 z) {
+    function rpow(uint256 x, uint256 n) public pure returns (uint256) {
         return super._rpow(x, n);
     }
 
@@ -22,9 +21,8 @@ contract SparkVaultHarness is SparkVault {
 
 contract MathTestBase is Test {
 
-    SparkVaultHarness harness;  // NOTE: Don't need to use upgradablility pattern because of pure functions
-
-    uint256 constant RAY = 1e27;
+    // NOTE: Don't need to use upgradability pattern because of pure functions
+    SparkVaultHarness harness;
 
     function setUp() public {
         harness = new SparkVaultHarness();
@@ -78,6 +76,8 @@ contract RpowSuccessTests is MathTestBase {
         uint256 ssr;
     }
 
+    // NOTE: The CSV data was sourced from Sky Ecosystem's SSR conversion table:
+    //       https://ipfs.io/ipfs/QmVp4mhhbwWGTfbh2BzwQB9eiBrQBKiqcPRZCaAxNUaar6
     function fixtureApySsr() public view returns (ApySsrTestCase[] memory testCases) {
         string memory csv = vm.readFile("test/tables/rpow-apy.csv");
         string[] memory rows = vm.split(csv, "\n");
@@ -90,13 +90,22 @@ contract RpowSuccessTests is MathTestBase {
         }
     }
 
-    function table_rpow_apySsr(ApySsrTestCase memory apySsr) public view {
+    function table_rpow_apySsr18Decimals(ApySsrTestCase memory apySsr) public view {
         uint256 deposit = 1_000_000e18;
 
         uint256 depositWithYieldApy = deposit * (10000 + apySsr.apy) / 10000;
         uint256 depositWithYieldSsr = deposit * harness.rpow(apySsr.ssr, 365 days) / 1e27;
 
-        assertApproxEqAbs(depositWithYieldApy, depositWithYieldSsr, 150000);  // 1.5e-13 difference maximum on 1m
+        assertApproxEqAbs(depositWithYieldApy, depositWithYieldSsr, 150_000);  // 1.5e-13 difference maximum on 1m
+    }
+
+    function table_rpow_apySsr6Decimals(ApySsrTestCase memory apySsr) public view {
+        uint256 deposit = 1_000_000e6;
+
+        uint256 depositWithYieldApy = deposit * (10000 + apySsr.apy) / 10000;
+        uint256 depositWithYieldSsr = deposit * harness.rpow(apySsr.ssr, 365 days) / 1e27;
+
+        assertApproxEqAbs(depositWithYieldApy, depositWithYieldSsr, 1);  // 1 unit of rounding error for 6 decimals
     }
 
 }
