@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity 0.8.29;
 
-import { ERC4626Test } from "erc4626-tests/ERC4626.test.sol";
+import { ERC4626Test, IMockERC20 } from "erc4626-tests/ERC4626.test.sol";
 
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
@@ -9,13 +9,13 @@ import { SparkVault } from "src/SparkVault.sol";
 
 import { SparkVaultTestBase } from "./TestBase.t.sol";
 
-contract SparkVaultERC4626Test is ERC4626Test, SparkVaultTestBase {
+contract SparkVaultERC4626StandardTest is ERC4626Test, SparkVaultTestBase {
 
     // NOTE: This cannot be part of SparkVaultTestBase, because that is used in a contract where DssTest
     // is also used (and that also defines RAY).
     uint256 constant internal RAY = 1e27;
 
-    function setUp() public override(ERC4626Test, SparkVaultTestBase) {
+    function setUp() public virtual override(ERC4626Test, SparkVaultTestBase) {
         super.setUp();
 
         vm.startPrank(admin);
@@ -77,6 +77,98 @@ contract SparkVaultERC4626Test is ERC4626Test, SparkVaultTestBase {
             assertEq(uint256(vault.rho()), block.timestamp);
             assertEq(uint256(vault.chi()), newChi);
         }
+    }
+
+}
+
+contract SparkVaultERC4626Test is SparkVaultTestBase {
+
+    address user1 = makeAddr("user1");
+    address user2 = makeAddr("user2");
+    address user3 = makeAddr("user3");
+
+    event Referral(uint16 indexed referral, address indexed owner, uint256 assets, uint256 shares);
+
+    // Do a deposit to get non-zero state
+    function setUp() public override {
+        super.setUp();
+
+        vm.prank(admin);
+        vault.setSsrBounds(ONE_PCT_SSR, FOUR_PCT_SSR);
+
+        vm.prank(setter);
+        vault.setSsr(FOUR_PCT_SSR);
+
+        deal(address(asset), user1, 1_000_000e6);
+
+        vm.startPrank(user1);
+        asset.approve(address(vault), 1_000_000e6);
+        vault.deposit(1_000_000e6, user1);
+        vm.stopPrank();
+
+        skip(1 days);
+    }
+
+    function test_depositWithReferral() public {
+        uint16 referral = 1;
+
+        uint256 assets = 1_000_000e6;
+        uint256 shares = vault.previewDeposit(assets);
+
+        assertEq(shares, 999_892.551764e6);
+
+        deal(address(asset), user2, assets);
+
+        assertEq(vault.balanceOf(user3),          0);
+        assertEq(vault.totalSupply(),             1_000_000e6);
+        assertEq(asset.balanceOf(user2),          assets);
+        assertEq(asset.balanceOf(address(vault)), 1_000_000e6);
+
+        vm.startPrank(user2);
+
+        asset.approve(address(vault), assets);
+
+        vm.expectEmit(true, true, false, true, address(vault));
+        emit Referral(referral, user3, assets, shares);
+        vault.deposit(assets, user3, referral);
+
+        vm.stopPrank();
+
+        assertEq(vault.balanceOf(user3),          shares);
+        assertEq(vault.totalSupply(),             1_000_000e6 + shares);
+        assertEq(asset.balanceOf(user2),          0);
+        assertEq(asset.balanceOf(address(vault)), 1_000_000e6 + assets);
+    }
+
+    function test_mintWithReferral() public {
+        uint16 referral = 1;
+
+        uint256 shares = 1_000_000e6;
+        uint256 assets = vault.previewMint(shares);
+
+        assertEq(assets, 1_000_107.459783e6);
+
+        deal(address(asset), user2, assets);
+
+        assertEq(vault.balanceOf(user3),          0);
+        assertEq(vault.totalSupply(),             1_000_000e6);
+        assertEq(asset.balanceOf(user2),          assets);
+        assertEq(asset.balanceOf(address(vault)), 1_000_000e6);
+
+        vm.startPrank(user2);
+
+        asset.approve(address(vault), assets);
+
+        vm.expectEmit(true, true, false, true, address(vault));
+        emit Referral(referral, user3, assets, shares);
+        vault.mint(shares, user3, referral);
+
+        vm.stopPrank();
+
+        assertEq(vault.balanceOf(user3),          shares);
+        assertEq(vault.totalSupply(),             1_000_000e6 + shares);
+        assertEq(asset.balanceOf(user2),          0);
+        assertEq(asset.balanceOf(address(vault)), 1_000_000e6 + assets);
     }
 
 }
