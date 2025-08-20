@@ -85,15 +85,16 @@ contract SparkVaultInitializeSuccessTests is SparkVaultTestBase {
 
 }
 
-contract SparkVaultGettersTests is SparkVaultTestBase {
+contract SparkVaultConvenienceViewFunctionTests is SparkVaultTestBase {
 
     // NOTE: This cannot be part of SparkVaultTestBase, because that is used in a contract where DssTest
     // is also used (and that also defines RAY).
     uint256 constant internal RAY = 1e27;
 
+    address user1 = makeAddr("user1");
+
     function test_convenienceViewFunctions() public {
         // Test `assetsOf(address)`, `assetsOutstanding()`, `nowChi()`
-        address user1 = makeAddr("user1");
         deal(address(asset), user1, 1_000_000e6);
 
         vm.startPrank(user1);
@@ -137,6 +138,46 @@ contract SparkVaultGettersTests is SparkVaultTestBase {
         assertEq(vault.assetsOutstanding(), 500_005.568121e6);
         assertEq(vault.assetsOf(user1),     1_000_005.568121e6);
         assertEq(vault.nowChi(),            1.000005568121819975177325790e27);
+    }
+
+function test_assetsOutstanding_returnsZeroOverLiquidityBoundary() public {
+        vm.prank(admin);
+        vault.setSsrBounds(ONE_PCT_SSR, FOUR_PCT_SSR);
+
+        vm.prank(setter);
+        vault.setSsr(FOUR_PCT_SSR);
+
+        deal(address(asset), user1, 1_000_000e6);
+
+        vm.startPrank(user1);
+        asset.approve(address(vault), 1_000_000e6);
+        vault.deposit(1_000_000e6, user1);
+        vm.stopPrank();
+
+        assertEq(vault.assetsOutstanding(), 0);
+
+        skip(1 days);
+
+        assertEq(vault.assetsOutstanding(), 107.459782e6);
+
+        uint256 totalAssets = vault.totalAssets();
+
+        assertEq(totalAssets, 1_000_107.459782e6);
+
+        deal(address(asset), address(vault), totalAssets - 1);
+
+        // Should return 1
+        assertEq(vault.assetsOutstanding(), 1);
+
+        deal(address(asset), address(vault), totalAssets);
+
+        // Should return 0 when liquidity == totalAssets
+        assertEq(vault.assetsOutstanding(), 0);
+
+        deal(address(asset), address(vault), totalAssets + 1);
+
+        // Should return 0 when liquidity > totalAssets
+        assertEq(vault.assetsOutstanding(), 0);
     }
 
 }
