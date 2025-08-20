@@ -88,7 +88,7 @@ contract SparkVaultERC4626Test is SparkVaultTestBase {
 
     event Referral(uint16 indexed referral, address indexed owner, uint256 assets, uint256 shares);
 
-    // Do some deposits to get some non-zero state
+    // Do a deposit to get non-zero state
     function setUp() public override {
         super.setUp();
 
@@ -111,10 +111,10 @@ contract SparkVaultERC4626Test is SparkVaultTestBase {
     function test_depositWithReferral() public {
         uint16 referral = 1;
 
-        uint256 assets = 1_000_000e18;
+        uint256 assets = 1_000_000e6;
         uint256 shares = vault.previewDeposit(assets);
 
-        assertEq(shares, 999_892.551764336081175605e18);
+        assertEq(shares, 999_892.551764e6);
 
         deal(address(asset), user2, assets);
 
@@ -127,7 +127,7 @@ contract SparkVaultERC4626Test is SparkVaultTestBase {
 
         asset.approve(address(vault), assets);
 
-        vm.expectEmit(true, true, false, true);
+        vm.expectEmit(true, true, false, true, address(vault));
         emit Referral(referral, user2, assets, shares);
         vault.deposit(assets, user2, referral);
 
@@ -142,10 +142,10 @@ contract SparkVaultERC4626Test is SparkVaultTestBase {
     function test_mintWithReferral() public {
         uint16 referral = 1;
 
-        uint256 shares = 1_000_000e18;
+        uint256 shares = 1_000_000e6;
         uint256 assets = vault.previewMint(shares);
 
-        assertEq(assets, 1_000_107.459782027902551817e18);
+        assertEq(assets, 1_000_107.459783e6);
 
         deal(address(asset), user2, assets);
 
@@ -158,7 +158,7 @@ contract SparkVaultERC4626Test is SparkVaultTestBase {
 
         asset.approve(address(vault), assets);
 
-        vm.expectEmit(true, true, false, true);
+        vm.expectEmit(true, true, false, true, address(vault));
         emit Referral(referral, user2, assets, shares);
         vault.mint(shares, user2, referral);
 
