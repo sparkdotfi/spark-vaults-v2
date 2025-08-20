@@ -85,7 +85,7 @@ contract SparkVaultInitializeSuccessTests is SparkVaultTestBase {
 
 }
 
-contract SparkVaultGettersTests is SparkVaultTestBase {
+contract SparkVaultConvenienceViewFunctionTests is SparkVaultTestBase {
 
     // NOTE: This cannot be part of SparkVaultTestBase, because that is used in a contract where DssTest
     // is also used (and that also defines RAY).
@@ -140,7 +140,7 @@ contract SparkVaultGettersTests is SparkVaultTestBase {
         assertEq(vault.nowChi(),            1.000005568121819975177325790e27);
     }
 
-    function test_assetsOutstanding_returnsZeroOverLiquidityBoundary() public {
+function test_assetsOutstanding_returnsZeroOverLiquidityBoundary() public {
         vm.prank(admin);
         vault.setSsrBounds(ONE_PCT_SSR, FOUR_PCT_SSR);
 
@@ -160,10 +160,23 @@ contract SparkVaultGettersTests is SparkVaultTestBase {
 
         assertEq(vault.assetsOutstanding(), 107.459782e6);
 
-        // Deal assets to vault such that liquidity > assets
-        deal(address(asset), address(vault), 1_000_107.459782e6);
+        uint256 totalAssets = vault.totalAssets();
 
-        // Should return 0
+        assertEq(totalAssets, 1_000_107.459782e6);
+
+        deal(address(asset), address(vault), totalAssets - 1);
+
+        // Should return 1
+        assertEq(vault.assetsOutstanding(), 1);
+
+        deal(address(asset), address(vault), totalAssets);
+
+        // Should return 0 when liquidity == totalAssets
+        assertEq(vault.assetsOutstanding(), 0);
+
+        deal(address(asset), address(vault), totalAssets + 1);
+
+        // Should return 0 when totalAssets > liquidity
         assertEq(vault.assetsOutstanding(), 0);
     }
 
