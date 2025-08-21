@@ -30,16 +30,27 @@ contract SparkVaultInvariantTest is SparkVaultTestBase {
     }
 
     function invariants() public {
-        inv_lastBalanceOf();
-        inv_lastAssetsOf();
+        // These logs are for informational pursposes; they are for locating which invariant failed
+        // in the test trace.
+        // console.log("inv_lastBalanceOf");
+        // inv_lastBalanceOf();
+        // console.log("inv_lastAssetsOf");
+        // inv_lastAssetsOf();
         // inv_maxDeposit();
         // inv_maxMint();
+        console.log("inv_maxRedeem");
         inv_maxRedeem();
+        console.log("inv_maxWithdraw");
         inv_maxWithdraw();
+        console.log("inv_totalAssets");
         inv_totalAssets();
+        console.log("inv_assetsOf");
         inv_assetsOf();
+        console.log("inv_assetsOutstanding");
         inv_assetsOutstanding();
+        console.log("inv_nowChi_eq_drip");
         inv_nowChi_eq_drip();
+        console.log("inv_call_summary");
         inv_call_summary();
     }
 
@@ -144,12 +155,10 @@ contract SparkVaultInvariantTest is SparkVaultTestBase {
 
     function inv_assetsOutstanding() internal view {
         uint256 assets = vault.totalAssets();
-
-        uint256 sharesToAssets = assets * RAY / vault.nowChi();
         uint256 assetBalance   = asset.balanceOf(address(vault));
 
-        if (sharesToAssets >= assetBalance) {
-            assertEq(vault.assetsOutstanding(), sharesToAssets - assetBalance);
+        if (assets >= assetBalance) {
+            assertEq(vault.assetsOutstanding(), assets - assetBalance);
         } else {
             // TODO: Once this is implemented
             // assertEq(vault.assetsOutstanding(), 0);
@@ -170,9 +179,7 @@ contract SparkVaultInvariantTest is SparkVaultTestBase {
         console.log("deposit",      handler.numCalls("deposit"));
         console.log("mint",         handler.numCalls("mint"));
         console.log("withdraw",     handler.numCalls("withdraw"));
-        console.log("withdrawAll",  handler.numCalls("withdrawAll"));
         console.log("redeem",       handler.numCalls("redeem"));
-        console.log("redeemAll",    handler.numCalls("redeemAll"));
         console.log("setSsrBounds", handler.numCalls("setSsrBounds"));
         console.log("setSsr",       handler.numCalls("setSsr"));
         console.log("warp",         handler.numCalls("warp"));

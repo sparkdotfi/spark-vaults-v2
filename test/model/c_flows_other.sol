@@ -28,16 +28,16 @@ contract FlowsOther is FlowsErc4626 {
         vault.setSsr(ssr);
     }
 
-    // function warp(uint256 secs) public {
-    //     numCalls["warp"]++;
-    //     secs = _bound(secs, 0, 365 days);
-    //     vm.warp(block.timestamp + secs);
-    // }
+    function warp(uint256 secs) public {
+        numCalls["warp"]++;
+        secs = _bound(secs, 0, 365 days);
+        vm.warp(block.timestamp + secs);
+    }
 
-    // function drip() public {
-    //     numCalls["drip"]++;
-    //     vault.drip();
-    // }
+    function drip() public {
+        numCalls["drip"]++;
+        vault.drip();
+    }
 
     function take(uint256 amount) public {
         numCalls["take"]++;

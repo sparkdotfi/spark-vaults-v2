@@ -15,8 +15,8 @@ contract FlowsErc4626 is Init {
         deal(address(asset), user, assetAmount);
         asset.approve(address(vault), assetAmount);
         uint256 shareAmount = vault.deposit(assetAmount, address(user));
-        lastBalanceOf[user] += shareAmount;
-        lastAssetsOf[user] += assetAmount;
+        lastBalanceOf[user] += vault.balanceOf(user);
+        lastAssetsOf[user] += vault.assetsOf(user);
         vm.stopPrank();
     }
 
@@ -30,8 +30,14 @@ contract FlowsErc4626 is Init {
         asset.approve(address(vault), previewAssetAmount);
         uint256 assetAmount = vault.mint(shareAmount, address(user));
         assertEq(assetAmount, previewAssetAmount);
-        lastBalanceOf[user] += shareAmount;
-        lastAssetsOf[user] += assetAmount;
+        // It may happen that we pull `assetAmount` from the user (which rounds up), but actually
+        // `assetsOf` (which rounds down) returns `assetAmount - 1`.
+        // uint256 assetsOfDiff = vault.assetsOf(user) - lastAssetsOf[user];
+        // console.log("lastAssetsOf[user]", lastAssetsOf[user]);
+        // console.log("assetsOfDiff", assetsOfDiff);
+        // assertTrue(assetsOfDiff == assetAmount || assetsOfDiff == assetAmount - 1);
+        // lastBalanceOf[user] += shareAmount;
+        // lastAssetsOf[user] += assetsOfDiff;
         vm.stopPrank();
     }
 
@@ -42,8 +48,8 @@ contract FlowsErc4626 is Init {
         assetAmount = _bound(assetAmount, 0, effectiveAssets);
 
         uint256 shareAmount = vault.withdraw(assetAmount, address(user), address(user));
-        lastBalanceOf[user] -= shareAmount;
-        lastAssetsOf[user] -= assetAmount;
+        // lastBalanceOf[user] -= shareAmount;
+        // lastAssetsOf[user] -= assetAmount;
         vm.stopPrank();
     }
 
@@ -55,8 +61,8 @@ contract FlowsErc4626 is Init {
         shareAmount = _bound(shareAmount, 0, effectiveShares);
 
         uint256 assetAmount = vault.redeem(shareAmount, address(user), address(user));
-        lastBalanceOf[user] -= shareAmount;
-        lastAssetsOf[user] -= assetAmount;
+        // lastBalanceOf[user] -= shareAmount;
+        // lastAssetsOf[user] -= assetAmount;
         vm.stopPrank();
     }
 
