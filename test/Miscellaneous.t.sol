@@ -49,9 +49,9 @@ contract SparkVaultInitializeSuccessTests is SparkVaultTestBase {
         assertEq(vault.symbol(), "");
         assertEq(vault.chi(),    0);
         assertEq(vault.rho(),    0);
-        assertEq(vault.ssr(),    0);
-        assertEq(vault.minSsr(), 0);
-        assertEq(vault.maxSsr(), 0);
+        assertEq(vault.vsr(),    0);
+        assertEq(vault.minVsr(), 0);
+        assertEq(vault.maxVsr(), 0);
 
         assertFalse(vault.hasRole(DEFAULT_ADMIN_ROLE, admin));
 
@@ -76,9 +76,9 @@ contract SparkVaultInitializeSuccessTests is SparkVaultTestBase {
         assertEq(vault.symbol(), "spUSDC");
         assertEq(vault.chi(),     RAY);
         assertEq(vault.rho(),     uint64(block.timestamp));
-        assertEq(vault.ssr(),     RAY);
-        assertEq(vault.minSsr(),  RAY);
-        assertEq(vault.maxSsr(),  RAY);
+        assertEq(vault.vsr(),     RAY);
+        assertEq(vault.minVsr(),  RAY);
+        assertEq(vault.maxVsr(),  RAY);
 
         assertTrue(vault.hasRole(DEFAULT_ADMIN_ROLE, admin));
     }
@@ -107,13 +107,13 @@ contract SparkVaultConvenienceViewFunctionTests is SparkVaultTestBase {
         assertEq(vault.nowChi(),            RAY);
 
         vm.startPrank(admin);
-        vault.setSsrBounds(1e27, vault.MAX_SSR());
+        vault.setVsrBounds(1e27, vault.MAX_VSR());
         vm.startPrank(setter);
 
         // 5% APY:
         // ❯ bc -l <<< 'scale=27; e( l(1.05)/(60 * 60 * 24 * 365) )'
         // 1.000000001547125957863212448
-        vault.setSsr(1.000000001547125957863212448e27);
+        vault.setVsr(1.000000001547125957863212448e27);
         vm.stopPrank();
 
         vm.prank(taker);
@@ -142,10 +142,10 @@ contract SparkVaultConvenienceViewFunctionTests is SparkVaultTestBase {
 
 function test_assetsOutstanding_returnsZeroOverLiquidityBoundary() public {
         vm.prank(admin);
-        vault.setSsrBounds(ONE_PCT_SSR, FOUR_PCT_SSR);
+        vault.setVsrBounds(ONE_PCT_VSR, FOUR_PCT_VSR);
 
         vm.prank(setter);
-        vault.setSsr(FOUR_PCT_SSR);
+        vault.setVsr(FOUR_PCT_VSR);
 
         deal(address(asset), user1, 1_000_000e6);
 

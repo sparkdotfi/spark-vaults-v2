@@ -3,50 +3,50 @@ pragma solidity >=0.8.0;
 
 import "./TestBase.t.sol";
 
-contract SparkVaultSetSsrBoundsFailureTests is SparkVaultTestBase {
+contract SparkVaultSetVsrBoundsFailureTests is SparkVaultTestBase {
 
-    function test_setSsrBounds_notAdmin() public {
+    function test_setVsrBounds_notAdmin() public {
         vm.expectRevert(abi.encodeWithSignature(
             "AccessControlUnauthorizedAccount(address,bytes32)",
             address(this),
             DEFAULT_ADMIN_ROLE
         ));
-        vault.setSsrBounds(1e27, FOUR_PCT_SSR);
+        vault.setVsrBounds(1e27, FOUR_PCT_VSR);
     }
 
-    function test_setSsrBounds_belowRayBoundary() public {
+    function test_setVsrBounds_belowRayBoundary() public {
         vm.startPrank(admin);
-        vm.expectRevert("SparkVault/ssr-too-low");
-        vault.setSsrBounds(1e27 - 1, FOUR_PCT_SSR);
+        vm.expectRevert("SparkVault/vsr-too-low");
+        vault.setVsrBounds(1e27 - 1, FOUR_PCT_VSR);
 
-        vault.setSsrBounds(1e27, FOUR_PCT_SSR);
+        vault.setVsrBounds(1e27, FOUR_PCT_VSR);
     }
 
-    function test_setSsrBounds_aboveMaxSsrBoundary() public {
+    function test_setVsrBounds_aboveMaxVsrBoundary() public {
         vm.startPrank(admin);
-        vm.expectRevert("SparkVault/ssr-too-high");
-        vault.setSsrBounds(1e27, MAX_SSR + 1);
+        vm.expectRevert("SparkVault/vsr-too-high");
+        vault.setVsrBounds(1e27, MAX_VSR + 1);
 
-        vault.setSsrBounds(1e27, MAX_SSR);
+        vault.setVsrBounds(1e27, MAX_VSR);
     }
 
 }
 
-contract SparkVaultSetSsrBoundsSuccessTests is SparkVaultTestBase {
+contract SparkVaultSetVsrBoundsSuccessTests is SparkVaultTestBase {
 
-    event SsrBoundsSet(uint256 oldMinSsr, uint256 oldMaxSsr, uint256 newMinSsr, uint256 newMaxSsr);
+    event VsrBoundsSet(uint256 oldMinVsr, uint256 oldMaxVsr, uint256 newMinVsr, uint256 newMaxVsr);
 
-    function test_setSsrBounds() public {
-        assertEq(vault.minSsr(), 1e27);
-        assertEq(vault.maxSsr(), 1e27);
+    function test_setVsrBounds() public {
+        assertEq(vault.minVsr(), 1e27);
+        assertEq(vault.maxVsr(), 1e27);
 
         vm.startPrank(admin);
         vm.expectEmit(address(vault));
-        emit SsrBoundsSet(1e27, 1e27, ONE_PCT_SSR, FOUR_PCT_SSR);
-        vault.setSsrBounds(ONE_PCT_SSR, FOUR_PCT_SSR);
+        emit VsrBoundsSet(1e27, 1e27, ONE_PCT_VSR, FOUR_PCT_VSR);
+        vault.setVsrBounds(ONE_PCT_VSR, FOUR_PCT_VSR);
 
-        assertEq(vault.minSsr(), ONE_PCT_SSR);
-        assertEq(vault.maxSsr(), FOUR_PCT_SSR);
+        assertEq(vault.minVsr(), ONE_PCT_VSR);
+        assertEq(vault.maxVsr(), FOUR_PCT_VSR);
     }
 
 }
@@ -160,86 +160,86 @@ contract SparkVaultRevokeRoleSuccessTests is SparkVaultGrantRoleSuccessTests {
 
 }
 
-contract SparkVaultSetSsrFailureTests is SparkVaultTestBase {
+contract SparkVaultSetVsrFailureTests is SparkVaultTestBase {
 
-    function test_setSsr_notSetter() public {
+    function test_setVsr_notSetter() public {
         vm.expectRevert(abi.encodeWithSignature(
             "AccessControlUnauthorizedAccount(address,bytes32)",
             address(this),
             SETTER_ROLE
         ));
-        vault.setSsr(ONE_PCT_SSR);
+        vault.setVsr(ONE_PCT_VSR);
     }
 
-    function test_setSsr_belowMinSsrBoundary() public {
+    function test_setVsr_belowMinVsrBoundary() public {
         vm.startPrank(setter);
-        vm.expectRevert("SparkVault/ssr-too-low");
-        vault.setSsr(1e27 - 1);
+        vm.expectRevert("SparkVault/vsr-too-low");
+        vault.setVsr(1e27 - 1);
 
-        vault.setSsr(1e27);  // Min is 1e27 on deployment
+        vault.setVsr(1e27);  // Min is 1e27 on deployment
 
         vm.stopPrank();
 
         vm.prank(admin);
-        vault.setSsrBounds(ONE_PCT_SSR, FOUR_PCT_SSR);
+        vault.setVsrBounds(ONE_PCT_VSR, FOUR_PCT_VSR);
 
         vm.startPrank(setter);
-        vm.expectRevert("SparkVault/ssr-too-low");
-        vault.setSsr(ONE_PCT_SSR - 1);
+        vm.expectRevert("SparkVault/vsr-too-low");
+        vault.setVsr(ONE_PCT_VSR - 1);
 
-        vault.setSsr(ONE_PCT_SSR);
+        vault.setVsr(ONE_PCT_VSR);
     }
 
-    function test_setSsr_aboveMaxSsrBoundary() public {
+    function test_setVsr_aboveMaxVsrBoundary() public {
         vm.startPrank(setter);
-        vm.expectRevert("SparkVault/ssr-too-high");
-        vault.setSsr(1e27 + 1);  // Can't set SSR until admin sets bounds
+        vm.expectRevert("SparkVault/vsr-too-high");
+        vault.setVsr(1e27 + 1);  // Can't set VSR until admin sets bounds
 
-        vault.setSsr(1e27);  // Max is 1e27 on deployment
+        vault.setVsr(1e27);  // Max is 1e27 on deployment
 
         vm.stopPrank();
 
         vm.prank(admin);
-        vault.setSsrBounds(ONE_PCT_SSR, FOUR_PCT_SSR);
+        vault.setVsrBounds(ONE_PCT_VSR, FOUR_PCT_VSR);
 
         vm.startPrank(setter);
-        vm.expectRevert("SparkVault/ssr-too-high");
-        vault.setSsr(FOUR_PCT_SSR + 1);
+        vm.expectRevert("SparkVault/vsr-too-high");
+        vault.setVsr(FOUR_PCT_VSR + 1);
 
-        vault.setSsr(FOUR_PCT_SSR);
+        vault.setVsr(FOUR_PCT_VSR);
     }
 
 }
 
-contract SparkVaultSetSsrSuccessTests is SparkVaultTestBase {
+contract SparkVaultSetVsrSuccessTests is SparkVaultTestBase {
 
     event Drip(uint256 nChi, uint256 diff);
-    event SsrSet(address sender, uint256 oldSsr, uint256 newSsr);
+    event VsrSet(address sender, uint256 oldVsr, uint256 newVsr);
 
     function setUp() public override {
         super.setUp();
         vm.prank(admin);
-        vault.setSsrBounds(1e27, FOUR_PCT_SSR);
+        vault.setVsrBounds(1e27, FOUR_PCT_VSR);
     }
 
-    function test_setSsr() public {
+    function test_setVsr() public {
         uint256 deployTimestamp = block.timestamp;
 
         skip(10 days);
 
         assertEq(uint256(vault.chi()), 1e27);
         assertEq(uint256(vault.rho()), deployTimestamp);
-        assertEq(uint256(vault.ssr()), 1e27);
+        assertEq(uint256(vault.vsr()), 1e27);
 
         vm.prank(setter);
         vm.expectEmit(address(vault));
         emit Drip(1e27, 0);
-        emit SsrSet(setter, 1e27, FOUR_PCT_SSR);
-        vault.setSsr(FOUR_PCT_SSR);
+        emit VsrSet(setter, 1e27, FOUR_PCT_VSR);
+        vault.setVsr(FOUR_PCT_VSR);
 
         assertEq(uint256(vault.chi()), 1e27);
         assertEq(uint256(vault.rho()), block.timestamp);
-        assertEq(uint256(vault.ssr()), FOUR_PCT_SSR);
+        assertEq(uint256(vault.vsr()), FOUR_PCT_VSR);
 
         assertEq(vault.nowChi(), 1e27);
 
