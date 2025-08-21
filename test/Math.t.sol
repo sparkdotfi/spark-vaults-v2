@@ -108,4 +108,28 @@ contract RpowSuccessTests is MathTestBase {
         assertApproxEqAbs(depositWithYieldApy, depositWithYieldSsr, 1);  // 1 unit of rounding error for 6 decimals
     }
 
+    // Adding this test to demonstrate the upper bound values of rpow instead of failure mode testing.
+    // MAX_SSR is 100% APY.
+    function test_rpow_upperBoundValues() public {
+        uint256 maxSsr = harness.MAX_SSR();
+
+        // Reverts between 75 and 80 years
+        vm.expectRevert();
+        harness.rpow(maxSsr, 80 * 365 days);
+
+        uint256 maxSsrChi = harness.rpow(maxSsr, 75 * 365 days);
+
+        // 37,778,931,862,957,161,634,615,052,296,000,273,248,252,349,772,281% accrued over 75 years at 100% APY
+        // without drip getting called.
+        assertEq(maxSsrChi, 3.7778931862957161634615052296000273248252349772281e49);
+    }
+
+    function test_rpow_lowerBoundValues() public view {
+        uint256 minSsr = 1e27;
+
+        uint256 minSsrRpow = harness.rpow(minSsr, 1000 * 365 days);
+
+        assertEq(minSsrRpow, 1e27);
+    }
+
 }
