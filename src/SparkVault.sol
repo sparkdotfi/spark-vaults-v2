@@ -288,17 +288,17 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
         emit Referral(referral, receiver, assets, shares);
     }
 
-    function withdraw(uint256 assets, address receiver, address owner)
-        external returns (uint256 shares)
-    {
-        shares = _divup(assets * RAY, drip());
-        _burn(assets, shares, receiver, owner);
-    }
-
     function redeem(uint256 shares, address receiver, address owner)
         external returns (uint256 assets)
     {
         assets = shares * drip() / RAY;
+        _burn(assets, shares, receiver, owner);
+    }
+
+    function withdraw(uint256 assets, address receiver, address owner)
+        external returns (uint256 shares)
+    {
+        shares = _divup(assets * RAY, drip());
         _burn(assets, shares, receiver, owner);
     }
 
