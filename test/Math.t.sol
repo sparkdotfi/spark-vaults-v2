@@ -127,9 +127,9 @@ contract RpowSuccessTests is MathTestBase {
     function test_rpow_lowerBoundValues() public view {
         uint256 minSsr = 1e27;
 
-        uint256 minSsrRpow = harness.rpow(minSsr, 1000 * 365 days);
+        uint256 minSsrChi = harness.rpow(minSsr, 1000 * 365 days);
 
-        assertEq(minSsrRpow, 1e27);
+        assertEq(minSsrChi, 1e27);
     }
 
 }
