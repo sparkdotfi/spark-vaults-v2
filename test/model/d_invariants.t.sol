@@ -32,10 +32,10 @@ contract SparkVaultInvariantTest is SparkVaultTestBase {
     function invariants() public {
         // These logs are for informational pursposes; they are for locating which invariant failed
         // in the test trace.
-        // console.log("inv_lastBalanceOf");
-        // inv_lastBalanceOf();
-        // console.log("inv_lastAssetsOf");
-        // inv_lastAssetsOf();
+        console.log("inv_lastBalanceOf");
+        inv_lastBalanceOf();
+        console.log("inv_lastAssetsOf");
+        inv_lastAssetsOf();
         // inv_maxDeposit();
         // inv_maxMint();
         console.log("inv_maxRedeem");
