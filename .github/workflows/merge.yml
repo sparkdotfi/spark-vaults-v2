@@ -7,9 +7,6 @@ on:
       - master
       - dev
 
-env:
-  FOUNDRY_PROFILE: master-ci
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -40,7 +37,7 @@ jobs:
           ARBITRUM_NOVA_RPC_URL: ${{secrets.ARBITRUM_NOVA_RPC_URL}}
           GNOSIS_CHAIN_RPC_URL: ${{secrets.GNOSIS_CHAIN_RPC_URL}}
           BASE_RPC_URL: ${{secrets.BASE_RPC_URL}}
-        run: FOUNDRY_PROFILE=ci forge test
+        run: FOUNDRY_PROFILE=master-ci forge test
 
   coverage:
     runs-on: ubuntu-latest
