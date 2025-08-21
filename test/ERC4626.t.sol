@@ -303,7 +303,7 @@ contract SparkVaultDepositSuccessTests is SparkVaultTestBase {
         vault.setVsrBounds(ONE_PCT_VSR, FOUR_PCT_VSR);
 
         vm.prank(setter);
-        vault.setsr(FOUR_PCT_VSR);
+        vault.setVsr(FOUR_PCT_VSR);
     }
 
     function test_deposit() public {
@@ -360,7 +360,7 @@ contract SparkVaultMintSuccessTests is SparkVaultTestBase {
         vault.setVsrBounds(ONE_PCT_VSR, FOUR_PCT_VSR);
 
         vm.prank(setter);
-        vault.setSsr(FOUR_PCT_VSR);
+        vault.setVsr(FOUR_PCT_VSR);
     }
 
     function test_mint() public {
@@ -401,7 +401,7 @@ contract SparkVaultWithdrawFailureTests is SparkVaultTestBase {
         vault.setVsrBounds(ONE_PCT_VSR, FOUR_PCT_VSR);
 
         vm.prank(setter);
-        vault.setsr(FOUR_PCT_VSR);
+        vault.setVsr(FOUR_PCT_VSR);
 
         deal(address(asset), user1, 1_000_000e6);
 
@@ -467,7 +467,7 @@ contract SparkVaultWithdrawSuccessTests is SparkVaultTestBase {
         vault.setVsrBounds(ONE_PCT_VSR, FOUR_PCT_VSR);
 
         vm.prank(setter);
-        vault.setsr(FOUR_PCT_VSR);
+        vault.setVsr(FOUR_PCT_VSR);
 
         deal(address(asset), user1, 1_000_000e6);
 
@@ -553,7 +553,7 @@ contract SparkVaultRedeemFailureTests is SparkVaultTestBase {
         vault.setVsrBounds(ONE_PCT_VSR, FOUR_PCT_VSR);
 
         vm.prank(setter);
-        vault.setsr(FOUR_PCT_VSR);
+        vault.setVsr(FOUR_PCT_VSR);
 
         deal(address(asset), user1, 1_000_000e6);
 
@@ -623,7 +623,7 @@ contract SparkVaultRedeemSuccessTests is SparkVaultTestBase {
         vault.setVsrBounds(ONE_PCT_VSR, FOUR_PCT_VSR);
 
         vm.prank(setter);
-        vault.setsr(FOUR_PCT_VSR);
+        vault.setVsr(FOUR_PCT_VSR);
 
         deal(address(asset), user1, 1_000_000e6);
 
