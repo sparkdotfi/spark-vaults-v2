@@ -87,6 +87,8 @@ contract SparkVaultERC4626Test is SparkVaultTestBase {
     address user2 = makeAddr("user2");
     address user3 = makeAddr("user3");
 
+    uint256 totalAssets;
+
     event Referral(uint16 indexed referral, address indexed owner, uint256 assets, uint256 shares);
 
     // Do a deposit to get non-zero state
@@ -107,6 +109,107 @@ contract SparkVaultERC4626Test is SparkVaultTestBase {
         vm.stopPrank();
 
         skip(1 days);
+
+        totalAssets = vault.totalAssets();
+    }
+
+    function test_previewRedeem_revertsOverLiquidityBoundary() public {
+        // Deal value accrued to the vault
+        deal(address(asset), address(vault), totalAssets);
+
+        uint256 shares = vault.balanceOf(user1);
+
+        assertEq(shares, 1_000_000e6);
+
+        // Remove smallest unit of liquidity from the vault
+        vm.prank(taker);
+        vault.take(1);
+
+        // Redeem should revert over the liquidity boundary
+        vm.expectRevert("SparkVault/insufficient-liquidity");
+        vault.previewRedeem(shares);
+
+        // Transfer liquidity back to the vault
+        vm.prank(taker);
+        asset.transfer(address(vault), 1);
+
+        // Redeem should now succeed
+        vault.previewRedeem(shares);
+    }
+
+    function test_previewWithdraw_revertsOverLiquidityBoundary() public {
+        // Deal value accrued to the vault
+        deal(address(asset), address(vault), totalAssets);
+
+        uint256 assets = vault.assetsOf(user1);
+
+        assertEq(assets, totalAssets);
+
+        // Remove smallest unit of liquidity from the vault
+        vm.prank(taker);
+        vault.take(1);
+
+        vm.expectRevert("SparkVault/insufficient-liquidity");
+        vault.previewWithdraw(assets);
+
+        // Transfer liquidity back to the vault
+        vm.prank(taker);
+        asset.transfer(address(vault), 1);
+
+        vault.previewWithdraw(assets);
+    }
+
+    function test_maxRedeem_liquidityLessThanAmount() public {
+        // Deal value accrued to the vault
+        deal(address(asset), address(vault), totalAssets);
+
+        uint256 maxRedeemFull = vault.maxRedeem(user1);
+
+        assertEq(maxRedeemFull, 1_000_000e6);
+
+        // Remove most liquidity but leave some
+        uint256 liquidityToRemove = maxRedeemFull * 9 / 10; // Remove 90% of liquidity
+        vm.prank(taker);
+        vault.take(liquidityToRemove);
+
+        // User should still be able to redeem
+        uint256 maxRedeemPartial = vault.maxRedeem(user1);
+
+        assertEq(maxRedeemPartial, 100_096.703413e6);
+        assertEq(maxRedeemPartial, vault.previewWithdraw(asset.balanceOf(address(vault))));
+
+        // Remove all liquidity from the vault
+        vm.startPrank(taker);
+        vault.take(asset.balanceOf(address(vault)));
+        vm.stopPrank();
+
+        // Redeem max amount should return 0
+        assertEq(vault.maxRedeem(user1), 0);
+    }
+
+    function test_maxWithdraw_liquidityLessThanAmount() public {
+        uint256 maxWithdrawFull = vault.maxWithdraw(user1);
+
+        assertEq(maxWithdrawFull, 1_000_000e6);
+
+        // Remove most liquidity but leave some
+        uint256 liquidityToRemove = maxWithdrawFull * 9 / 10; // Remove 90% of liquidity
+        vm.prank(taker);
+        vault.take(liquidityToRemove);
+
+        // User should still be able to withdraw the remaining liquidity
+        uint256 maxWithdrawPartial = vault.maxWithdraw(user1);
+
+        assertEq(maxWithdrawPartial, maxWithdrawFull - liquidityToRemove);
+        assertEq(maxWithdrawPartial, asset.balanceOf(address(vault)));
+
+        // Remove all liquidity from the vault
+        vm.startPrank(taker);
+        vault.take(asset.balanceOf(address(vault)));
+        vm.stopPrank();
+
+        // Withdraw max amount should return 0
+        assertEq(vault.maxWithdraw(user1), 0);
     }
 
     function test_depositWithReferral() public {

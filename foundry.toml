@@ -10,7 +10,13 @@ fs_permissions = [{ access = "read", path = "test/tables" }]
 [fuzz]
 runs = 5000
 
-[profile.ci.fuzz]
-runs = 5000 # TODO: Increase
+[profile.coverage.fuzz]
+runs = 100
+
+[profile.pr-ci.fuzz]
+runs = 10000
+
+[profile.master-ci.fuzz]
+runs = 500000
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
