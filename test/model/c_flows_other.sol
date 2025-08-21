@@ -43,4 +43,11 @@ contract FlowsOther is FlowsErc4626 {
         vault.take(amount);
     }
 
+    function give(uint256 amount) public {
+        numCalls["give"]++;
+        amount = _bound(amount, 0, 10_000_000_000 * 10 ** asset.decimals());
+        deal(address(asset), address(this), amount);
+        asset.transfer(address(vault), amount);
+    }
+
 }

@@ -95,10 +95,18 @@ contract SparkVaultInvariantTest is SparkVaultTestBase {
     function inv_maxRedeem() internal {
         for (uint256 i = 0; i < handler.N(); i++) {
             address user      = handler.users(i);
-            uint256 shares    = vault.balanceOf(user);
             uint256 maxRedeem = vault.maxRedeem(user);
 
-            // TODO: Once this is implemented
+            vm.startPrank(user);
+            // There will EITHER be not enough liquidity (SparkVault/insufficient-liquidity) (if
+            // take is run) OR the user will not have enough assets
+            vm.expectRevert();
+            vault.redeem(maxRedeem + 1, user, user);
+            if (maxRedeem > 0) {
+                maxRedeem -= 1;
+            }
+            vault.redeem(maxRedeem, user, user);
+            vm.stopPrank();
         }
 
     }
@@ -106,12 +114,14 @@ contract SparkVaultInvariantTest is SparkVaultTestBase {
     function inv_maxWithdraw() internal {
         for (uint256 i = 0; i < handler.N(); i++) {
             address user        = handler.users(i);
-            uint256 shares      = vault.balanceOf(user);
             uint256 maxWithdraw = vault.maxWithdraw(user);
             vm.startPrank(user);
-            // vm.expectRevert("Vault/insufficient-balance");
-            // vault.withdraw(maxWithdraw + 1, user, user);
-            // vault.withdraw(maxWithdraw, user, user);
+            // There will EITHER be not enough liquidity (SparkVault/insufficient-liquidity) (if
+            // take is run) OR the user will not have enough assets
+            // (SparkVault/insufficient-balance)
+            vm.expectRevert();
+            vault.withdraw(maxWithdraw + 1, user, user);
+            vault.withdraw(maxWithdraw, user, user);
             vm.stopPrank();
         }
     }
@@ -153,8 +163,7 @@ contract SparkVaultInvariantTest is SparkVaultTestBase {
         if (assets >= assetBalance) {
             assertEq(vault.assetsOutstanding(), assets - assetBalance);
         } else {
-            // TODO: Once this is implemented
-            // assertEq(vault.assetsOutstanding(), 0);
+            assertEq(vault.assetsOutstanding(), 0);
         }
     }
 
@@ -178,6 +187,7 @@ contract SparkVaultInvariantTest is SparkVaultTestBase {
         console.log("warp",         handler.numCalls("warp"));
         console.log("drip",         handler.numCalls("drip"));
         console.log("take",         handler.numCalls("take"));
+        console.log("give",         handler.numCalls("give"));
     }
 
 }
