@@ -39,21 +39,21 @@ interface ISparkVault is IERC20Permit, IERC4626 {
     event Referral(uint16 indexed referral, address indexed owner, uint256 assets, uint256 shares);
 
     /**
-     * @notice Emitted when the bounds for the Spark Savings Rate (SSR) are updated.
-     * @param  oldMinSsr The previous minimum allowed SSR value [ray]
-     * @param  oldMaxSsr The previous maximum allowed SSR value [ray]
-     * @param  newMinSsr The new minimum allowed SSR value [ray]
-     * @param  newMaxSsr The new maximum allowed SSR value [ray]
+     * @notice Emitted when the bounds for the Vault Savings Rate (VSR) are updated.
+     * @param  oldMinVsr The previous minimum allowed VSR value [ray]
+     * @param  oldMaxVsr The previous maximum allowed VSR value [ray]
+     * @param  newMinVsr The new minimum allowed VSR value [ray]
+     * @param  newMaxVsr The new maximum allowed VSR value [ray]
      */
-    event SsrBoundsSet(uint256 oldMinSsr, uint256 oldMaxSsr, uint256 newMinSsr, uint256 newMaxSsr);
+    event VsrBoundsSet(uint256 oldMinVsr, uint256 oldMaxVsr, uint256 newMinVsr, uint256 newMaxVsr);
 
     /**
-     * @notice Emitted when the Spark Savings Rate (SSR) is updated.
-     * @param  sender The address that called setSsr() to update the rate
-     * @param  oldSsr The previous SSR value before the update [ray]
-     * @param  newSsr The new SSR value after the update [ray]
+     * @notice Emitted when the Vault Savings Rate (VSR) is updated.
+     * @param  sender The address that called setVsr() to update the rate
+     * @param  oldVsr The previous VSR value before the update [ray]
+     * @param  newVsr The new VSR value after the update [ray]
      */
-    event SsrSet(address indexed sender, uint256 oldSsr, uint256 newSsr);
+    event VsrSet(address indexed sender, uint256 oldVsr, uint256 newVsr);
 
     /**
      * @notice Emitted when assets are withdrawn from the vault by accounts with TAKER_ROLE.
@@ -65,8 +65,8 @@ interface ISparkVault is IERC20Permit, IERC4626 {
     /**
      * @notice Returns the current rate accumulator (chi).
      * @dev    Chi represents the cumulative growth factor for all shares. It starts at 1e27 (RAY) and
-     *         increases exponentially over time based on the Spark Savings Rate (SSR). The formula is:
-     *         chi = chi_old * (ssr)^(time_delta) / RAY where time_delta is the time since last drip.
+     *         increases exponentially over time based on the Vault Savings Rate (VSR). The formula is:
+     *         chi = chi_old * (vsr)^(time_delta) / RAY where time_delta is the time since last drip.
      *         User assets = user_shares * nowChi() / RAY
      * @return The current rate accumulator value [ray]
      */
@@ -75,8 +75,8 @@ interface ISparkVault is IERC20Permit, IERC4626 {
     /**
      * @notice Updates the rate accumulator and returns the new value.
      * @dev    This function calculates the new chi value based on the time elapsed since the last drip
-     *         and the current SSR. The formula used is:
-     *         new_chi = old_chi * (ssr)^(block.timestamp - rho) / RAY
+     *         and the current VSR. The formula used is:
+     *         new_chi = old_chi * (vsr)^(block.timestamp - rho) / RAY
      * @return nChi The new Chi value [ray]
      */
     function drip() external returns (uint256);
@@ -89,21 +89,21 @@ interface ISparkVault is IERC20Permit, IERC4626 {
     function rho() external view returns (uint64);
 
     /**
-     * @notice Sets the Spark Savings Rate (SSR) within the configured bounds.
+     * @notice Sets the Vault Savings Rate (VSR) within the configured bounds.
      * @dev    This function can only be called by accounts with SETTER_ROLE.
-     *         The SSR determines the rate at which user shares grow over time. A higher SSR
+     *         The VSR determines the rate at which user shares grow over time. A higher VSR
      *         means faster share growth and higher yields for depositors.
-     * @param  data The new SSR value [ray]
+     * @param  data The new VSR value [ray]
      */
-    function setSsr(uint256 data) external;
+    function setVsr(uint256 data) external;
 
     /**
-     * @notice Returns the current Spark Savings Rate (SSR).
-     * @dev    The SSR is the rate at which the vault's shares appreciate in value over time.
+     * @notice Returns the current Vault Savings Rate (VSR).
+     * @dev    The VSR is the rate at which the vault's shares appreciate in value over time.
      *         It's expressed in ray (1e27).
-     * @return The current SSR value [ray]
+     * @return The current VSR value [ray]
      */
-    function ssr() external view returns (uint256);
+    function vsr() external view returns (uint256);
 
     /**
      * @notice Deposits specified assets and mints shares.

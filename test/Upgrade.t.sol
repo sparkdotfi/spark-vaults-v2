@@ -58,7 +58,7 @@ contract SparkVaultUpgradeTest is SparkVaultTestBase {
 
     SparkVault newVaultImplementation;
 
-    uint256 setSsrTimestamp;
+    uint256 setVsrTimestamp;
 
     // Do some deposits to get some non-zero state
     function setUp() public override {
@@ -67,12 +67,12 @@ contract SparkVaultUpgradeTest is SparkVaultTestBase {
         newVaultImplementation = new SparkVault();
 
         vm.prank(admin);
-        vault.setSsrBounds(ONE_PCT_SSR, FOUR_PCT_SSR);
+        vault.setVsrBounds(ONE_PCT_VSR, FOUR_PCT_VSR);
 
         vm.prank(setter);
-        vault.setSsr(FOUR_PCT_SSR);
+        vault.setVsr(FOUR_PCT_VSR);
 
-        setSsrTimestamp = block.timestamp;
+        setVsrTimestamp = block.timestamp;
 
         deal(address(asset), user1, 1_000_000e6);
 
@@ -91,12 +91,12 @@ contract SparkVaultUpgradeTest is SparkVaultTestBase {
         assertEq(vault.symbol(),   "spUSDC");
         assertEq(vault.decimals(), 18);
 
-        assertEq(vault.minSsr(), ONE_PCT_SSR);
-        assertEq(vault.maxSsr(), FOUR_PCT_SSR);
+        assertEq(vault.minVsr(), ONE_PCT_VSR);
+        assertEq(vault.maxVsr(), FOUR_PCT_VSR);
 
-        assertEq(uint256(vault.rho()), setSsrTimestamp);
+        assertEq(uint256(vault.rho()), setVsrTimestamp);
         assertEq(uint256(vault.chi()), uint192(1e27));
-        assertEq(uint256(vault.ssr()), FOUR_PCT_SSR);
+        assertEq(uint256(vault.vsr()), FOUR_PCT_VSR);
 
         address[] memory defaultAdmins = vault.getRoleMembers(DEFAULT_ADMIN_ROLE);
         address[] memory setters       = vault.getRoleMembers(SETTER_ROLE);
@@ -128,12 +128,12 @@ contract SparkVaultUpgradeTest is SparkVaultTestBase {
         assertEq(vault.symbol(),   "spUSDC");
         assertEq(vault.decimals(), 18);
 
-        assertEq(vault.minSsr(), ONE_PCT_SSR);
-        assertEq(vault.maxSsr(), FOUR_PCT_SSR);
+        assertEq(vault.minVsr(), ONE_PCT_VSR);
+        assertEq(vault.maxVsr(), FOUR_PCT_VSR);
 
-        assertEq(uint256(vault.rho()), setSsrTimestamp);
+        assertEq(uint256(vault.rho()), setVsrTimestamp);
         assertEq(uint256(vault.chi()), uint192(1e27));
-        assertEq(uint256(vault.ssr()), FOUR_PCT_SSR);
+        assertEq(uint256(vault.vsr()), FOUR_PCT_VSR);
 
         defaultAdmins = vault.getRoleMembers(DEFAULT_ADMIN_ROLE);
         setters       = vault.getRoleMembers(SETTER_ROLE);

@@ -19,18 +19,18 @@ contract SparkVaultERC4626StandardTest is ERC4626Test, SparkVaultTestBase {
         super.setUp();
 
         vm.startPrank(admin);
-        vault.setSsrBounds(
-            1e27, // minSsr
-            vault.MAX_SSR() // maxSsr
+        vault.setVsrBounds(
+            1e27, // minVsr
+            vault.MAX_VSR() // maxVsr
         );
         vm.stopPrank();
 
-        // >> Set ssr, warp time and drip
+        // >> Set vsr, warp time and drip
         vm.prank(setter);
         // 5% APY:
         // ❯ bc -l <<< 'scale=27; e( l(1.05)/(60 * 60 * 24 * 365) )'
         // 1.000000001547125957863212448
-        vault.setSsr(1.000000001547125957863212448e27);
+        vault.setVsr(1.000000001547125957863212448e27);
         vm.warp(100 days);
         vault.drip();
 
@@ -96,10 +96,10 @@ contract SparkVaultERC4626Test is SparkVaultTestBase {
         super.setUp();
 
         vm.prank(admin);
-        vault.setSsrBounds(ONE_PCT_SSR, FOUR_PCT_SSR);
+        vault.setVsrBounds(ONE_PCT_VSR, FOUR_PCT_VSR);
 
         vm.prank(setter);
-        vault.setSsr(FOUR_PCT_SSR);
+        vault.setVsr(FOUR_PCT_VSR);
 
         deal(address(asset), user1, 1_000_000e6);
 

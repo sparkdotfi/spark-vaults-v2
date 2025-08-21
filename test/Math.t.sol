@@ -71,65 +71,65 @@ contract DivupSuccessTests is MathTestBase {
 
 contract RpowSuccessTests is MathTestBase {
 
-    struct ApySsrTestCase {
+    struct ApyVsrTestCase {
         uint256 apy;
-        uint256 ssr;
+        uint256 vsr;
     }
 
-    // NOTE: The CSV data was sourced from Sky Ecosystem's SSR conversion table:
+    // NOTE: The CSV data was sourced from Sky Ecosystem's VSR conversion table:
     //       https://ipfs.io/ipfs/QmVp4mhhbwWGTfbh2BzwQB9eiBrQBKiqcPRZCaAxNUaar6
-    function fixtureApySsr() public view returns (ApySsrTestCase[] memory testCases) {
+    function fixtureApyVsr() public view returns (ApyVsrTestCase[] memory testCases) {
         string memory csv = vm.readFile("test/tables/rpow-apy.csv");
         string[] memory rows = vm.split(csv, "\n");
-        testCases = new ApySsrTestCase[](rows.length);
+        testCases = new ApyVsrTestCase[](rows.length);
         for (uint256 i = 0; i < rows.length; i++) {
-            testCases[i] = ApySsrTestCase({
+            testCases[i] = ApyVsrTestCase({
                 apy: vm.parseUint(vm.split(rows[i], ",")[0]),
-                ssr: vm.parseUint(vm.split(rows[i], ",")[1])
+                vsr: vm.parseUint(vm.split(rows[i], ",")[1])
             });
         }
     }
 
-    function table_rpow_apySsr18Decimals(ApySsrTestCase memory apySsr) public view {
+    function table_rpow_apyVsr18Decimals(ApyVsrTestCase memory apyVsr) public view {
         uint256 deposit = 1_000_000e18;
 
-        uint256 depositWithYieldApy = deposit * (10000 + apySsr.apy) / 10000;
-        uint256 depositWithYieldSsr = deposit * harness.rpow(apySsr.ssr, 365 days) / 1e27;
+        uint256 depositWithYieldApy = deposit * (10000 + apyVsr.apy) / 10000;
+        uint256 depositWithYieldVsr = deposit * harness.rpow(apyVsr.vsr, 365 days) / 1e27;
 
-        assertApproxEqAbs(depositWithYieldApy, depositWithYieldSsr, 150_000);  // 1.5e-13 difference maximum on 1m
+        assertApproxEqAbs(depositWithYieldApy, depositWithYieldVsr, 150_000);  // 1.5e-13 difference maximum on 1m
     }
 
-    function table_rpow_apySsr6Decimals(ApySsrTestCase memory apySsr) public view {
+    function table_rpow_apyVsr6Decimals(ApyVsrTestCase memory apyVsr) public view {
         uint256 deposit = 1_000_000e6;
 
-        uint256 depositWithYieldApy = deposit * (10000 + apySsr.apy) / 10000;
-        uint256 depositWithYieldSsr = deposit * harness.rpow(apySsr.ssr, 365 days) / 1e27;
+        uint256 depositWithYieldApy = deposit * (10000 + apyVsr.apy) / 10000;
+        uint256 depositWithYieldVsr = deposit * harness.rpow(apyVsr.vsr, 365 days) / 1e27;
 
-        assertApproxEqAbs(depositWithYieldApy, depositWithYieldSsr, 1);  // 1 unit of rounding error for 6 decimals
+        assertApproxEqAbs(depositWithYieldApy, depositWithYieldVsr, 1);  // 1 unit of rounding error for 6 decimals
     }
 
     // Adding this test to demonstrate the upper bound values of rpow instead of failure mode testing.
-    // MAX_SSR is 100% APY.
+    // MAX_VSR is 100% APY.
     function test_rpow_upperBoundValues() public {
-        uint256 maxSsr = harness.MAX_SSR();
+        uint256 maxVsr = harness.MAX_VSR();
 
         // Reverts between 75 and 80 years
         vm.expectRevert();
-        harness.rpow(maxSsr, 80 * 365 days);
+        harness.rpow(maxVsr, 80 * 365 days);
 
-        uint256 maxSsrChi = harness.rpow(maxSsr, 75 * 365 days);
+        uint256 maxVsrChi = harness.rpow(maxVsr, 75 * 365 days);
 
         // 37,778,931,862,957,161,634,615,052,296,000,273,248,252,349,772,281% accrued over 75 years at 100% APY
         // without drip getting called.
-        assertEq(maxSsrChi, 3.7778931862957161634615052296000273248252349772281e49);
+        assertEq(maxVsrChi, 3.7778931862957161634615052296000273248252349772281e49);
     }
 
     function test_rpow_lowerBoundValues() public view {
-        uint256 minSsr = 1e27;
+        uint256 minVsr = 1e27;
 
-        uint256 minSsrChi = harness.rpow(minSsr, 1000 * 365 days);
+        uint256 minVsrChi = harness.rpow(minVsr, 1000 * 365 days);
 
-        assertEq(minSsrChi, 1e27);
+        assertEq(minVsrChi, 1e27);
     }
 
 }

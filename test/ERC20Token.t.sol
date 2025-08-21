@@ -10,7 +10,7 @@ contract ERC20TokenTests is SparkVaultTestBase, TokenFuzzChecks {
     function setUp() public override {
         super.setUp();
         vm.startPrank(admin);
-        vault.setSsrBounds(1e27, vault.MAX_SSR());
+        vault.setVsrBounds(1e27, vault.MAX_VSR());
         vm.stopPrank();
     }
 
@@ -18,14 +18,14 @@ contract ERC20TokenTests is SparkVaultTestBase, TokenFuzzChecks {
         checkBulkERC20(address(vault), "SparkVault", "Spark Savings USDC V2", "spUSDC", "1", 18);
     }
 
-    function testERC20Fuzz(uint256 amount1, uint256 amount2, uint256 ssr, uint256 warpTime) public {
+    function testERC20Fuzz(uint256 amount1, uint256 amount2, uint256 vsr, uint256 warpTime) public {
         amount1  = bound(amount1,  0,    1e36);
         amount2  = bound(amount2,  0,    1e36);
-        ssr      = bound(ssr,      1e27, 1.000000012857214317438491659e27);  // 0 to 50% APY
+        vsr      = bound(vsr,      1e27, 1.000000012857214317438491659e27);  // 0 to 50% APY
         warpTime = bound(warpTime, 0,    10 days);
 
         vm.prank(setter);
-        vault.setSsr(ssr);
+        vault.setVsr(vsr);
 
         skip(warpTime);
 
