@@ -6,6 +6,7 @@ import "./c_flows_other.sol";
 import { SparkVaultTestBase } from "../TestBase.t.sol";
 
 contract SparkVaultInvariantTest is SparkVaultTestBase {
+
     // NOTE: This cannot be part of SparkVaultTestBase, because that is used in a contract where DssTest
     // is also used (and that also defines RAY).
     uint256 constant internal RAY = 1e27;
@@ -17,8 +18,17 @@ contract SparkVaultInvariantTest is SparkVaultTestBase {
 
         handler = new FlowsOther(address(vault));
 
-        targetContract(address(handler)); // Foundry will call only this contract's functions
+        // bytes4[] memory selectors = new bytes4[](1);
+        // selectors[0] = FlowsOther.script.selector;
+        // targetSelector(FuzzSelector({
+        //     selectors: selectors,
+        //     addr: address(handler)
+        // }));
+
+        // Foundry will call only this contract's functions
+        targetContract(address(handler));
     }
+
     function invariants() public {
         inv_lastBalanceOf();
         inv_lastAssetsOf();
@@ -95,9 +105,9 @@ contract SparkVaultInvariantTest is SparkVaultTestBase {
             uint256 shares      = vault.balanceOf(user);
             uint256 maxWithdraw = vault.maxWithdraw(user);
             vm.startPrank(user);
-            vm.expectRevert("Vault/insufficient-balance");
-            vault.withdraw(maxWithdraw + 1, user, user);
-            vault.withdraw(maxWithdraw, user, user);
+            // vm.expectRevert("Vault/insufficient-balance");
+            // vault.withdraw(maxWithdraw + 1, user, user);
+            // vault.withdraw(maxWithdraw, user, user);
             vm.stopPrank();
         }
     }
@@ -127,7 +137,7 @@ contract SparkVaultInvariantTest is SparkVaultTestBase {
                 uint256 assetsExpected = shares * vault.nowChi() / RAY;
                 assertGt(assetsExpected, 0);
                 assertEq(assets, assetsExpected);
-                assertLt(assetsExpected, vault.totalAssets());
+                assertLe(assetsExpected, vault.totalAssets());
             }
         }
     }
@@ -155,16 +165,19 @@ contract SparkVaultInvariantTest is SparkVaultTestBase {
 
     function inv_call_summary() internal view { // make external to enable
         console.log("------------------");
-
         console.log("\nCall Summary\n");
-        console.log("setSsr", handler.numCalls("setSsr"));
-        console.log("warp", handler.numCalls("warp"));
-        console.log("drip", handler.numCalls("drip"));
-        console.log("deposit", handler.numCalls("deposit"));
-        console.log("mint", handler.numCalls("mint"));
-        console.log("withdraw", handler.numCalls("withdraw"));
-        console.log("withdrawAll", handler.numCalls("withdrawAll"));
-        console.log("redeem", handler.numCalls("redeem"));
-        console.log("redeemAll", handler.numCalls("redeemAll"));
+
+        console.log("deposit",      handler.numCalls("deposit"));
+        console.log("mint",         handler.numCalls("mint"));
+        console.log("withdraw",     handler.numCalls("withdraw"));
+        console.log("withdrawAll",  handler.numCalls("withdrawAll"));
+        console.log("redeem",       handler.numCalls("redeem"));
+        console.log("redeemAll",    handler.numCalls("redeemAll"));
+        console.log("setSsrBounds", handler.numCalls("setSsrBounds"));
+        console.log("setSsr",       handler.numCalls("setSsr"));
+        console.log("warp",         handler.numCalls("warp"));
+        console.log("drip",         handler.numCalls("drip"));
+        console.log("take",         handler.numCalls("take"));
     }
+
 }

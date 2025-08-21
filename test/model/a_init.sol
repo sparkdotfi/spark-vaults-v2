@@ -5,6 +5,7 @@ import { StdUtils, StdCheats, Vm, Test, console2 as console, stdError } from "fo
 import { StdInvariant } from "forge-std/StdInvariant.sol";
 
 import { ERC20Mock as MockERC20 } from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
+import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 
 import { SparkVault } from "src/SparkVault.sol";
 
