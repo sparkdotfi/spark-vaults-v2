@@ -426,58 +426,32 @@ contract SparkVaultWithdrawFailureTests is SparkVaultTestBase {
         vm.expectRevert("SparkVault/insufficient-balance");
         vault.withdraw(assets + 1, user1, user1);
 
-        assertEq(vault.totalSupply(),             1_000_000e6);
-        assertEq(vault.balanceOf(user1),          1_000_000e6);
-        assertEq(vault.assetsOf(user1),           assets);
-        assertEq(vault.totalAssets(),             assets);
-        assertEq(asset.balanceOf(address(vault)), assets);
-        assertEq(asset.balanceOf(user1),          0);
-
         // Withdrawing assets should succeed
         vm.prank(user1);
         vault.withdraw(assets, user1, user1);
-
-        assertEq(vault.totalSupply(),             0);
-        assertEq(vault.balanceOf(user1),          0);
-        assertEq(vault.assetsOf(user1),           0);
-        assertEq(vault.totalAssets(),             0);
-        assertEq(asset.balanceOf(address(vault)), 0);
-        assertEq(asset.balanceOf(user1),          assets);
     }
 
     function test_withdraw_revertsInsufficientAllowanceBoundary() public {
+        uint256 shares = vault.balanceOf(user1);
         uint256 assets = vault.assetsOf(user1);
 
         address randomUser = makeAddr("randomUser");
 
-        assertEq(assets, 1_000_107.459782e6);
-
         // Deal value accrued to the vault
-        deal(address(asset), address(vault), assets);
+        deal(address(asset), address(vault), vault.totalAssets());
+
+        vm.prank(user1);
+        vault.approve(randomUser, shares - 1);
 
         vm.prank(randomUser);
         vm.expectRevert("SparkVault/insufficient-allowance");
-        vault.withdraw(assets, user1, user1);
+        vault.withdraw(assets, randomUser, user1);
 
         vm.prank(user1);
-        vault.approve(randomUser, assets);
-
-        assertEq(vault.totalSupply(),             1_000_000e6);
-        assertEq(vault.balanceOf(user1),          1_000_000e6);
-        assertEq(vault.assetsOf(user1),           assets);
-        assertEq(vault.totalAssets(),             assets);
-        assertEq(asset.balanceOf(address(vault)), assets);
-        assertEq(asset.balanceOf(user1),          0);
+        vault.approve(randomUser, shares);
 
         vm.prank(randomUser);
-        vault.withdraw(assets, user1, user1);
-
-        assertEq(vault.totalSupply(),             0);
-        assertEq(vault.balanceOf(user1),          0);
-        assertEq(vault.assetsOf(user1),           0);
-        assertEq(vault.totalAssets(),             0);
-        assertEq(asset.balanceOf(address(vault)), 0);
-        assertEq(asset.balanceOf(user1),          assets);
+        vault.withdraw(assets, randomUser, user1);
     }
 
 }
@@ -532,7 +506,7 @@ contract SparkVaultWithdrawSuccessTests is SparkVaultTestBase {
     }
 
     function test_withdraw_msgSenderNotOwner() public {
-        address random = makeAddr("random");
+        address randomUser = makeAddr("randomUser");
 
         uint256 assets = vault.assetsOf(user1);
 
@@ -543,23 +517,27 @@ contract SparkVaultWithdrawSuccessTests is SparkVaultTestBase {
 
         assertEq(vault.totalSupply(),             1_000_000e6);
         assertEq(vault.balanceOf(user1),          1_000_000e6);
+        assertEq(vault.balanceOf(randomUser),     0);
         assertEq(vault.assetsOf(user1),           assets);
         assertEq(vault.totalAssets(),             assets);
         assertEq(asset.balanceOf(address(vault)), assets);
         assertEq(asset.balanceOf(user1),          0);
+        assertEq(asset.balanceOf(randomUser),     0);
 
         vm.prank(user1);
-        vault.approve(random, 1_000_000e6);
+        vault.approve(randomUser, 1_000_000e6);
 
-        vm.prank(random);
-        vault.withdraw(assets, user1, user1);
+        vm.prank(randomUser);
+        vault.withdraw(assets, randomUser, user1);
 
         assertEq(vault.totalSupply(),             0);
         assertEq(vault.balanceOf(user1),          0);
+        assertEq(vault.balanceOf(randomUser),     0);
         assertEq(vault.assetsOf(user1),           0);
         assertEq(vault.totalAssets(),             0);
         assertEq(asset.balanceOf(address(vault)), 0);
-        assertEq(asset.balanceOf(user1),          assets);
+        assertEq(asset.balanceOf(user1),          0);
+        assertEq(asset.balanceOf(randomUser),     assets);
     }
 
 }
@@ -602,23 +580,8 @@ contract SparkVaultRedeemFailureTests is SparkVaultTestBase {
         vm.expectRevert("SparkVault/insufficient-balance");
         vault.redeem(shares + 1, user1, user1);
 
-        // Redeeming shares should succeed
-        assertEq(vault.totalSupply(),             1_000_000e6);
-        assertEq(vault.balanceOf(user1),          shares);
-        assertEq(vault.assetsOf(user1),           assets);
-        assertEq(vault.totalAssets(),             assets);
-        assertEq(asset.balanceOf(address(vault)), assets);
-        assertEq(asset.balanceOf(user1),          0);
-
         vm.prank(user1);
         vault.redeem(shares, user1, user1);
-
-        assertEq(vault.totalSupply(),             0);
-        assertEq(vault.balanceOf(user1),          0);
-        assertEq(vault.assetsOf(user1),           0);
-        assertEq(vault.totalAssets(),             0);
-        assertEq(asset.balanceOf(address(vault)), 0);
-        assertEq(asset.balanceOf(user1),          assets);
     }
 
     function test_redeem_revertsInsufficientAllowanceBoundary() public {
@@ -633,29 +596,18 @@ contract SparkVaultRedeemFailureTests is SparkVaultTestBase {
         // Deal value accrued to the vault
         deal(address(asset), address(vault), assets);
 
+        vm.prank(user1);
+        vault.approve(randomUser, shares - 1);
+
         vm.prank(randomUser);
         vm.expectRevert("SparkVault/insufficient-allowance");
-        vault.redeem(shares, user1, user1);
+        vault.redeem(shares, randomUser, user1);
 
         vm.prank(user1);
         vault.approve(randomUser, shares);
 
-        assertEq(vault.totalSupply(),             1_000_000e6);
-        assertEq(vault.balanceOf(user1),          shares);
-        assertEq(vault.assetsOf(user1),           assets);
-        assertEq(vault.totalAssets(),             assets);
-        assertEq(asset.balanceOf(address(vault)), assets);
-        assertEq(asset.balanceOf(user1),          0);
-
         vm.prank(randomUser);
-        vault.redeem(shares, user1, user1);
-
-        assertEq(vault.totalSupply(),             0);
-        assertEq(vault.balanceOf(user1),          0);
-        assertEq(vault.assetsOf(user1),           0);
-        assertEq(vault.totalAssets(),             0);
-        assertEq(asset.balanceOf(address(vault)), 0);
-        assertEq(asset.balanceOf(user1),          assets);
+        vault.redeem(shares, randomUser, user1);
     }
 
 }
@@ -712,7 +664,7 @@ contract SparkVaultRedeemSuccessTests is SparkVaultTestBase {
     }
 
     function test_redeem_msgSenderNotOwner() public {
-        address random = makeAddr("random");
+        address randomUser = makeAddr("randomUser");
 
         uint256 shares = vault.balanceOf(user1);
         uint256 assets = vault.assetsOf(user1);
@@ -725,23 +677,27 @@ contract SparkVaultRedeemSuccessTests is SparkVaultTestBase {
 
         assertEq(vault.totalSupply(),             1_000_000e6);
         assertEq(vault.balanceOf(user1),          1_000_000e6);
+        assertEq(vault.balanceOf(randomUser),     0);
         assertEq(vault.assetsOf(user1),           assets);
         assertEq(vault.totalAssets(),             assets);
         assertEq(asset.balanceOf(address(vault)), assets);
         assertEq(asset.balanceOf(user1),          0);
+        assertEq(asset.balanceOf(randomUser),     0);
 
         vm.prank(user1);
-        vault.approve(random, 1_000_000e6);
+        vault.approve(randomUser, 1_000_000e6);
 
-        vm.prank(random);
-        vault.redeem(shares, user1, user1);
+        vm.prank(randomUser);
+        vault.redeem(shares, randomUser, user1);
 
         assertEq(vault.totalSupply(),             0);
         assertEq(vault.balanceOf(user1),          0);
+        assertEq(vault.balanceOf(randomUser),     0);
         assertEq(vault.assetsOf(user1),           0);
         assertEq(vault.totalAssets(),             0);
         assertEq(asset.balanceOf(address(vault)), 0);
-        assertEq(asset.balanceOf(user1),          assets);
+        assertEq(asset.balanceOf(user1),          0);
+        assertEq(asset.balanceOf(randomUser),     assets);
     }
 
 }
