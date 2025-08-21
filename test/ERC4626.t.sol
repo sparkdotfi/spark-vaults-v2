@@ -179,8 +179,9 @@ contract SparkVaultERC4626Test is SparkVaultTestBase {
         assertEq(maxRedeemPartial, vault.previewWithdraw(asset.balanceOf(address(vault))));
 
         // Remove all liquidity from the vault
-        vm.prank(taker);
+        vm.startPrank(taker);
         vault.take(asset.balanceOf(address(vault)));
+        vm.stopPrank();
 
         // Redeem max amount should return 0
         assertEq(vault.maxRedeem(user1), 0);
@@ -203,8 +204,9 @@ contract SparkVaultERC4626Test is SparkVaultTestBase {
         assertEq(maxWithdrawPartial, asset.balanceOf(address(vault)));
 
         // Remove all liquidity from the vault
-        vm.prank(taker);
+        vm.startPrank(taker);
         vault.take(asset.balanceOf(address(vault)));
+        vm.stopPrank();
 
         // Withdraw max amount should return 0
         assertEq(vault.maxWithdraw(user1), 0);
