@@ -18,13 +18,6 @@ contract SparkVaultInvariantTest is SparkVaultTestBase {
 
         handler = new FlowsOther(address(vault));
 
-        // bytes4[] memory selectors = new bytes4[](1);
-        // selectors[0] = FlowsOther.script.selector;
-        // targetSelector(FuzzSelector({
-        //     selectors: selectors,
-        //     addr: address(handler)
-        // }));
-
         // Foundry will call only this contract's functions
         targetContract(address(handler));
     }
@@ -180,8 +173,8 @@ contract SparkVaultInvariantTest is SparkVaultTestBase {
         console.log("mint",         handler.numCalls("mint"));
         console.log("withdraw",     handler.numCalls("withdraw"));
         console.log("redeem",       handler.numCalls("redeem"));
-        console.log("setSsrBounds", handler.numCalls("setSsrBounds"));
-        console.log("setSsr",       handler.numCalls("setSsr"));
+        console.log("setVsrBounds", handler.numCalls("setVsrBounds"));
+        console.log("setVsr",       handler.numCalls("setVsr"));
         console.log("warp",         handler.numCalls("warp"));
         console.log("drip",         handler.numCalls("drip"));
         console.log("take",         handler.numCalls("take"));

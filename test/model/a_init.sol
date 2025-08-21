@@ -13,9 +13,9 @@ contract Init is Test {
     uint256 constant RAY = 10 ** 27;
 
     // Common storage
-    uint256 constant ONE_PCT_SSR  = 1.000000000315522921573372069e27;
-    uint256 constant FOUR_PCT_SSR = 1.000000001243680656318820312e27;
-    uint256 constant MAX_SSR      = 1.000000021979553151239153027e27;  // 100% APY
+    uint256 constant ONE_PCT_VSR  = 1.000000000315522921573372069e27;
+    uint256 constant FOUR_PCT_VSR = 1.000000001243680656318820312e27;
+    uint256 constant MAX_VSR      = 1.000000021979553151239153027e27;  // 100% APY
 
     address admin;
     address setter;
@@ -36,7 +36,7 @@ contract Init is Test {
     address[N] public users;
 
     mapping (address user => uint256 lastBalance) public lastBalanceOf;
-    mapping (address user => uint256 lastAssets) public lastAssetsOf;
+    mapping (address user => uint256 lastAssets)  public lastAssetsOf;
 
     constructor(address _vault) {
         vault = SparkVault(_vault);

@@ -7,25 +7,22 @@ contract FlowsOther is FlowsErc4626 {
 
     constructor(address _vault) FlowsErc4626(_vault) {}
 
-    function script() public {
-    }
-
-    function setSsrBounds(
-        uint256 minSsr,
-        uint256 maxSsr
+    function setVsrBounds(
+        uint256 minVsr,
+        uint256 maxVsr
     ) public {
-        numCalls["setSsrBounds"]++;
-        minSsr = _bound(minSsr, RAY, FOUR_PCT_SSR); // between 0% and 4% apy
-        maxSsr = _bound(maxSsr, minSsr, MAX_SSR); // between minSsr and 100% apy
+        numCalls["setVsrBounds"]++;
+        minVsr = _bound(minVsr, RAY, FOUR_PCT_VSR); // between 0% and 4% apy
+        maxVsr = _bound(maxVsr, minVsr, MAX_VSR); // between minVsr and 100% apy
         vm.prank(admin);
-        vault.setSsrBounds(minSsr, maxSsr);
+        vault.setVsrBounds(minVsr, maxVsr);
     }
 
-    function setSsr(bool authFail, uint256 failCallerSeed, uint256 ssr) public {
-        numCalls["setSsr"]++;
-        ssr = _bound(ssr, vault.minSsr(), vault.maxSsr());
+    function setVsr(bool authFail, uint256 failCallerSeed, uint256 vsr) public {
+        numCalls["setVsr"]++;
+        vsr = _bound(vsr, vault.minVsr(), vault.maxVsr());
         vm.prank(setter);
-        vault.setSsr(ssr);
+        vault.setVsr(vsr);
     }
 
     function warp(uint256 secs) public {
