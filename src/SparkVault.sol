@@ -38,7 +38,7 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
 
     // This corresponds to a 100% APY, verify here:
     // bc -l <<< 'scale=27; e( l(2)/(60 * 60 * 24 * 365) )'
-    uint256 public constant MAX_SSR = 1.000000021979553151239153027e27;
+    uint256 public constant MAX_VSR = 1.000000021979553151239153027e27;
     uint256 public constant RAY     = 1e27;
 
     bytes32 public constant SETTER_ROLE = keccak256("SETTER_ROLE");
@@ -63,9 +63,9 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
 
     uint64  public rho;    // Time of last drip              [unix epoch time]
     uint192 public chi;    // The Rate Accumulator           [ray]
-    uint256 public ssr;    // The Spark Savings Rate         [ray]
-    uint256 public minSsr; // The minimum Spark Savings Rate [ray]
-    uint256 public maxSsr; // The maximum Spark Savings Rate [ray]
+    uint256 public vsr;    // The Vault savings rate         [ray]
+    uint256 public minVsr; // The minimum Vault savings rate [ray]
+    uint256 public maxVsr; // The maximum Vault savings rate [ray]
 
     uint256 public totalSupply;
 
@@ -95,10 +95,10 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
 
         chi = uint192(RAY);
         rho = uint64(block.timestamp);
-        ssr = RAY;
+        vsr = RAY;
 
-        minSsr = RAY;
-        maxSsr = RAY;
+        minVsr = RAY;
+        maxVsr = RAY;
     }
 
     // Only DEFAULT_ADMIN_ROLE can upgrade the implementation
@@ -108,25 +108,25 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
     /*** Role-based external functions                                                          ***/
     /**********************************************************************************************/
 
-    function setSsrBounds(uint256 minSsr_, uint256 maxSsr_) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(minSsr_ >= RAY,     "SparkVault/ssr-too-low");
-        require(maxSsr_ <= MAX_SSR, "SparkVault/ssr-too-high");
+    function setVsrBounds(uint256 minVsr_, uint256 maxVsr_) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(minVsr_ >= RAY,     "SparkVault/vsr-too-low");
+        require(maxVsr_ <= MAX_VSR, "SparkVault/vsr-too-high");
 
-        emit SsrBoundsSet(minSsr, maxSsr, minSsr_, maxSsr_);
+        emit VsrBoundsSet(minVsr, maxVsr, minVsr_, maxVsr_);
 
-        minSsr = minSsr_;
-        maxSsr = maxSsr_;
+        minVsr = minVsr_;
+        maxVsr = maxVsr_;
     }
 
-    function setSsr(uint256 data) external onlyRole(SETTER_ROLE) {
-        require(data >= minSsr, "SparkVault/ssr-too-low");
-        require(data <= maxSsr, "SparkVault/ssr-too-high");
+    function setVsr(uint256 data) external onlyRole(SETTER_ROLE) {
+        require(data >= minVsr, "SparkVault/vsr-too-low");
+        require(data <= maxVsr, "SparkVault/vsr-too-high");
 
         drip();
-        uint256 ssr_ = ssr;
-        ssr = data;
+        uint256 vsr_ = vsr;
+        vsr = data;
 
-        emit SsrSet(msg.sender, ssr_, data);
+        emit VsrSet(msg.sender, vsr_, data);
     }
 
     function take(uint256 value) external onlyRole(TAKER_ROLE) {
@@ -143,7 +143,7 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
         (uint256 chi_, uint256 rho_) = (chi, rho);
         uint256 diff;
         if (block.timestamp > rho_) {
-            nChi = _rpow(ssr, block.timestamp - rho_) * chi_ / RAY;
+            nChi = _rpow(vsr, block.timestamp - rho_) * chi_ / RAY;
             uint256 totalSupply_ = totalSupply;
             diff = totalSupply_ * nChi / RAY - totalSupply_ * chi_ / RAY;
 
@@ -381,7 +381,7 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
     }
 
     function nowChi() public view returns (uint256) {
-        return (block.timestamp > rho) ? _rpow(ssr, block.timestamp - rho) * chi / RAY : chi;
+        return (block.timestamp > rho) ? _rpow(vsr, block.timestamp - rho) * chi / RAY : chi;
     }
 
     /**********************************************************************************************/

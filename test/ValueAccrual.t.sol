@@ -28,7 +28,7 @@ contract ValueAccrualE2ETest is SparkVaultTestBase {
         super.setUp();
 
         vm.startPrank(admin);
-        vault.setSsrBounds(ONE_PCT_SSR, FOUR_PCT_SSR);
+        vault.setVsrBounds(ONE_PCT_VSR, FOUR_PCT_VSR);
         vm.stopPrank();
     }
 
@@ -72,10 +72,10 @@ contract ValueAccrualE2ETest is SparkVaultTestBase {
 
         _assertTestState(state);
 
-        // Step 3: Setter increases SSR
+        // Step 3: Setter increases VSR
 
         vm.startPrank(setter);
-        vault.setSsr(FOUR_PCT_SSR);
+        vault.setVsr(FOUR_PCT_VSR);
         vm.stopPrank();
 
         // No vault accounting changes
@@ -120,10 +120,10 @@ contract ValueAccrualE2ETest is SparkVaultTestBase {
 
         _assertTestState(state);
 
-        // Step 7: Setter decreases SSR
+        // Step 7: Setter decreases VSR
 
         vm.startPrank(setter);
-        vault.setSsr(ONE_PCT_SSR);
+        vault.setVsr(ONE_PCT_VSR);
         vm.stopPrank();
 
         // No vault accounting changes
@@ -276,10 +276,10 @@ contract ValueAccrualE2ETest is SparkVaultTestBase {
 
         _assertTestState(state, 0);
 
-        // Step 3: Setter increases SSR
+        // Step 3: Setter increases VSR
 
         vm.startPrank(setter);
-        vault.setSsr(FOUR_PCT_SSR);
+        vault.setVsr(FOUR_PCT_VSR);
         vm.stopPrank();
 
         // No vault accounting changes
@@ -329,10 +329,10 @@ contract ValueAccrualE2ETest is SparkVaultTestBase {
 
         _assertTestState(state, 3);
 
-        // Step 7: Setter decreases SSR
+        // Step 7: Setter decreases VSR
 
         vm.startPrank(setter);
-        vault.setSsr(ONE_PCT_SSR);
+        vault.setVsr(ONE_PCT_VSR);
         vm.stopPrank();
 
         // No vault accounting changes

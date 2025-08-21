@@ -25,16 +25,16 @@ interface ISparkVault is IERC20Permit, IERC4626 {
     // Events
     event Drip(uint256 chi, uint256 diff);
     event Referral(uint16 indexed referral, address indexed owner, uint256 assets, uint256 shares);
-    event SsrBoundsSet(uint256 oldMinSsr, uint256 oldMaxSsr, uint256 newMinSsr, uint256 newMaxSsr);
-    event SsrSet(address indexed sender, uint256 oldSsr, uint256 newSsr);
+    event VsrBoundsSet(uint256 oldMinVsr, uint256 oldMaxVsr, uint256 newMinVsr, uint256 newMaxVsr);
+    event VsrSet(address indexed sender, uint256 oldVsr, uint256 newVsr);
     event Take(address indexed to, uint256 value);
 
     // Valuation functions
     function chi() external view returns (uint192);
     function drip() external returns (uint256);
     function rho() external view returns (uint64);
-    function setSsr(uint256 data) external;
-    function ssr() external view returns (uint256);
+    function setVsr(uint256 data) external;
+    function vsr() external view returns (uint256);
 
     // ERC4626 functions with referrals
     function deposit(uint256, address, uint16) external returns (uint256);
