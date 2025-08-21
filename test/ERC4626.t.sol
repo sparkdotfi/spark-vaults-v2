@@ -360,7 +360,7 @@ contract SparkVaultMintSuccessTests is SparkVaultTestBase {
         vault.setVsrBounds(ONE_PCT_VSR, FOUR_PCT_VSR);
 
         vm.prank(setter);
-        vault.setsr(FOUR_PCT_VSR);
+        vault.setSsr(FOUR_PCT_VSR);
     }
 
     function test_mint() public {
