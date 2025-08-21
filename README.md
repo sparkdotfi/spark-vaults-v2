@@ -8,7 +8,7 @@
 
 ## Overview
 
-Spark Vaults V2 is an ERC4626-compliant yield-bearing vault that implements a continuous rate accumulation mechanism. Users can deposit assets and earn yields through the Vault savings rate (VSR), with all interest automatically compounded into their share value. The value created in this vault comes from the ability of a permissioned actor (`TAKER_ROLE`, which is set to be the Spark Liquidity Layer) to pull liquidity and deploy it into yield bearing strategies, and then `transfer` the assets back into the vault to maintain liquidity for withdrawals. The value that this actor owes to the vault at any given time is `assetsOutstanding() = totalAssets() - asset.balanceOf(address(this))`.
+Spark Vaults V2 is an ERC4626-compliant yield-bearing vault that implements a continuous rate accumulation mechanism. Users can deposit assets and earn yields through the Vault Savings Rate (VSR), with all interest automatically compounded into their share value. The value created in this vault comes from the ability of a permissioned actor (`TAKER_ROLE`, which is set to be the Spark Liquidity Layer) to pull liquidity and deploy it into yield bearing strategies, and then `transfer` the assets back into the vault to maintain liquidity for withdrawals. The value that this actor owes to the vault at any given time is `assetsOutstanding() = totalAssets() - asset.balanceOf(address(this))`.
 
 Spark Vaults V2 is a fork of sUSDS, sharing much of the same functionality. The key differences between these two contracts are:
 - Using OZ AccessControl instead of `rely/deny` and `wards`.
@@ -43,7 +43,7 @@ The vault uses the following rate accumulation mechanism:
 
 - **`chi`**: The rate accumulator that tracks cumulative growth
 - **`rho`**: Timestamp of the last rate update
-- **`vsr`**: Vault savings rate that determines yield generation
+- **`vsr`**: Vault Savings Rate that determines yield generation
 
 #### Mathematical Foundation
 

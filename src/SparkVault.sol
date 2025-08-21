@@ -63,9 +63,9 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
 
     uint64  public rho;    // Time of last drip              [unix epoch time]
     uint192 public chi;    // The Rate Accumulator           [ray]
-    uint256 public vsr;    // The Vault savings rate         [ray]
-    uint256 public minVsr; // The minimum Vault savings rate [ray]
-    uint256 public maxVsr; // The maximum Vault savings rate [ray]
+    uint256 public vsr;    // The Vault Savings Rate         [ray]
+    uint256 public minVsr; // The minimum Vault Savings Rate [ray]
+    uint256 public maxVsr; // The maximum Vault Savings Rate [ray]
 
     uint256 public totalSupply;
 
