@@ -30,6 +30,14 @@ contract SparkVaultSetVsrBoundsFailureTests is SparkVaultTestBase {
         vault.setVsrBounds(1e27, MAX_VSR);
     }
 
+    function test_setVsrBounds_minVsrGtMaxVsrBoundary() public {
+        vm.startPrank(admin);
+        vm.expectRevert("SparkVault/min-vsr-gt-max-vsr");
+        vault.setVsrBounds(FOUR_PCT_VSR + 1, FOUR_PCT_VSR);
+
+        vault.setVsrBounds(FOUR_PCT_VSR, FOUR_PCT_VSR);
+    }
+
 }
 
 contract SparkVaultSetVsrBoundsSuccessTests is SparkVaultTestBase {
