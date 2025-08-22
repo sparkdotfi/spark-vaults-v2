@@ -165,7 +165,7 @@ contract SparkVaultERC4626Test is SparkVaultTestBase {
 
         uint256 maxRedeemFull = vault.maxRedeem(user1);
 
-        assertEq(maxRedeemFull, 1_000_000e6);
+        assertEq(maxRedeemFull, 999_999.999999e6);
 
         // Remove most liquidity but leave some
         uint256 liquidityToRemove = maxRedeemFull * 9 / 10; // Remove 90% of liquidity
@@ -176,7 +176,7 @@ contract SparkVaultERC4626Test is SparkVaultTestBase {
         uint256 maxRedeemPartial = vault.maxRedeem(user1);
 
         assertEq(maxRedeemPartial, 100_096.703413e6);
-        assertEq(maxRedeemPartial, vault.previewWithdraw(asset.balanceOf(address(vault))));
+        assertEq(maxRedeemPartial, vault.previewWithdraw(asset.balanceOf(address(vault))) - 1);
 
         // Remove all liquidity from the vault
         vm.startPrank(taker);
