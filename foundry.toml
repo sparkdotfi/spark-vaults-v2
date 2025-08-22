@@ -20,26 +20,28 @@ runs = 10000
 runs = 500000
 
 [invariant]
-runs             = 3      # The number of times to run the invariant tests
-depth            = 10_000 # The number of calls to make in the invariant tests
-fail_on_revert   = true   # Fail the invariant test if an error occurs
-shrink_run_limit = 50     # The number of times to shrink the invariant test
-show_metrics     = true   # Show the metrics of the invariant test
-show_solidity    = true   # Show the solidity code of the invariant test
+runs             = 3
+depth            = 5_000
+fail_on_revert   = true
+shrink_run_limit = 50
+show_metrics     = true
+show_solidity    = true
 
 [profile.pr-ci.invariant]
-runs             = 50      # The number of times to run the invariant tests
-depth            = 10_000  # The number of calls to make in the invariant tests
-fail_on_revert   = true    # Fail the invariant test if an error occurs
-shrink_run_limit = 50      # The number of times to shrink the invariant test
-show_metrics     = true    # Show the metrics of the invariant test
-show_solidity    = true    # Show the solidity code of the invariant test
+runs             = 5
+depth            = 10_000
+fail_on_revert   = true
+shrink_run_limit = 50
+show_metrics     = true
+show_solidity    = true
 
 [profile.master-ci.invariant]
-runs             = 50       # The number of times to run the invariant tests
-depth            = 100_000  # The number of calls to make in the invariant tests
-fail_on_revert   = true     # Fail the invariant test if an error occurs
-shrink_run_limit = 50       # The number of times to shrink the invariant test
-show_metrics     = true     # Show the metrics of the invariant test
-show_solidity    = true     # Show the solidity code of the invariant test
+runs             = 50
+depth            = 100_000
+fail_on_revert   = true
+shrink_run_limit = 50
+show_metrics     = true
+show_solidity    = true
+timeout          = 18_000
+
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config

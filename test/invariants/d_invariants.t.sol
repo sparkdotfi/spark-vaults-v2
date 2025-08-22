@@ -51,7 +51,6 @@ contract SparkVaultInvariantTest is SparkVaultTestBase {
             vault.redeem(maxRedeem,     user, user);
             vm.stopPrank();
         }
-
     }
 
     function invariant_maxWithdraw() public {
