@@ -323,7 +323,10 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
     }
 
     function maxRedeem(address owner) external view returns (uint256) {
-        uint256 maxShares  = _divup(IERC20(asset).balanceOf(address(this)) * RAY, nowChi());
+        // NOTE: Rounds down to be conservative. This may sometimes result in a maxRedeem result
+        // that is not actually the max. However, rounding up could sometimes result in a maxRedeem
+        // that is too high.
+        uint256 maxShares  = IERC20(asset).balanceOf(address(this)) * RAY / nowChi();
         uint256 userShares = balanceOf[owner];
         return maxShares > userShares ? userShares : maxShares;
     }
