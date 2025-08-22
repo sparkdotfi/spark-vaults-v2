@@ -10,7 +10,7 @@ contract FlowsOther is FlowsErc4626 {
     function setVsrBounds(
         uint256 minVsr,
         uint256 maxVsr
-    ) public {
+    ) public totalAssetsCheck accountingCheck {
         numCalls["setVsrBounds"]++;
         minVsr = _bound(minVsr, RAY,    FOUR_PCT_VSR);   // between 0% and 4% apy
         maxVsr = _bound(maxVsr, minVsr, FORTY_PCT_VSR);  // between minVsr and 40% apy
@@ -18,32 +18,32 @@ contract FlowsOther is FlowsErc4626 {
         vault.setVsrBounds(minVsr, maxVsr);
     }
 
-    function setVsr(uint256 vsr) public {
+    function setVsr(uint256 vsr) public totalAssetsCheck accountingCheck {
         numCalls["setVsr"]++;
         vsr = _bound(vsr, vault.minVsr(), vault.maxVsr());
         vm.prank(setter);
         vault.setVsr(vsr);
     }
 
-    function warp(uint256 secs) public {
+    function warp(uint256 secs) public totalAssetsCheck accountingCheck {
         numCalls["warp"]++;
         secs = _bound(secs, 0, 10 days);
         vm.warp(block.timestamp + secs);
     }
 
-    function drip() public {
+    function drip() public totalAssetsCheck accountingCheck {
         numCalls["drip"]++;
         vault.drip();
     }
 
-    function take(uint256 amount) public {
+    function take(uint256 amount) public totalAssetsCheck accountingCheck {
         numCalls["take"]++;
         amount = _bound(amount, 0, asset.balanceOf(address(vault)));
         vm.prank(taker);
         vault.take(amount);
     }
 
-    function give(uint256 amount) public {
+    function give(uint256 amount) public totalAssetsCheck accountingCheck {
         numCalls["give"]++;
         amount = _bound(amount, 0, 10_000_000_000 * 10 ** asset.decimals());
         deal(address(asset), address(this), amount);

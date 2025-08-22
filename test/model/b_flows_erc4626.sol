@@ -7,7 +7,7 @@ contract FlowsErc4626 is Init {
 
     constructor(address _vault) Init(_vault) {}
 
-    function deposit(uint256 assetAmount, uint32 userIndex) public {
+    function deposit(uint256 assetAmount, uint32 userIndex) public totalAssetsCheck accountingCheck {
         numCalls["deposit"]++;
         address user = getRandomUser(userIndex);
         assetAmount  = _bound(assetAmount, 0, 10_000_000_000 * 10 ** asset.decimals());
@@ -20,7 +20,7 @@ contract FlowsErc4626 is Init {
         vm.stopPrank();
     }
 
-    function mint(uint256 shareAmount, uint32 userIndex) public {
+    function mint(uint256 shareAmount, uint32 userIndex) public totalAssetsCheck accountingCheck {
         numCalls["mint"]++;
         address user = getRandomUser(userIndex);
         shareAmount = _bound(shareAmount, 0, 10_000_000_000 * 10 ** vault.decimals());
@@ -35,7 +35,7 @@ contract FlowsErc4626 is Init {
         vm.stopPrank();
     }
 
-    function withdraw(uint256 assetAmount, uint32 userIndex) public {
+    function withdraw(uint256 assetAmount, uint32 userIndex) public accountingCheck {
         numCalls["withdraw"]++;
         address user = getRandomUser(userIndex);
         uint256 effectiveAssets = Math.min(vault.assetsOf(user), asset.balanceOf(address(vault)));
@@ -47,7 +47,7 @@ contract FlowsErc4626 is Init {
         vm.stopPrank();
     }
 
-    function redeem(uint256 shareAmount, uint32 userIndex) public {
+    function redeem(uint256 shareAmount, uint32 userIndex) public accountingCheck {
         numCalls["redeem"]++;
         address user = getRandomUser(userIndex);
         uint256 effectiveAssets = Math.min(vault.assetsOf(user), asset.balanceOf(address(vault)));

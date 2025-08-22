@@ -38,6 +38,18 @@ contract Init is Test {
     mapping (address user => uint256 lastBalance) public lastBalanceOf;
     mapping (address user => uint256 lastAssets)  public lastAssetsOf;
 
+    modifier totalAssetsCheck() {
+        uint256 totalAssets = vault.totalAssets();
+        _;
+        assertGe(vault.totalAssets(), totalAssets);
+    }
+
+    modifier accountingCheck() {
+        uint256 convertToAssets = vault.convertToAssets(1e18);
+        _;
+        assertGe(vault.convertToAssets(1e18), convertToAssets);
+    }
+
     constructor(address _vault) {
         vault = SparkVault(_vault);
         asset = MockERC20(vault.asset());

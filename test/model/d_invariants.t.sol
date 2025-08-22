@@ -48,7 +48,7 @@ contract SparkVaultInvariantTest is SparkVaultTestBase {
             vm.startPrank(user);
             vm.expectRevert();
             vault.redeem(maxRedeem + 2, user, user);
-            vault.redeem(maxRedeem, user, user);
+            vault.redeem(maxRedeem,     user, user);
             vm.stopPrank();
         }
 
@@ -78,7 +78,7 @@ contract SparkVaultInvariantTest is SparkVaultTestBase {
         } else {
             uint256 totalAssetsExpected = totalShares * vault.nowChi() / RAY;
             assertGt(totalAssetsExpected, 0);
-            assertEq(totalAssets, totalAssetsExpected);
+            assertEq(totalAssets,         totalAssetsExpected);
         }
     }
 
@@ -93,7 +93,7 @@ contract SparkVaultInvariantTest is SparkVaultTestBase {
             } else {
                 uint256 assetsExpected = shares * vault.nowChi() / RAY;
                 assertGt(assetsExpected, 0);
-                assertEq(assets, assetsExpected);
+                assertEq(assets,         assetsExpected);
                 assertLe(assetsExpected, vault.totalAssets());
             }
         }
@@ -115,22 +115,6 @@ contract SparkVaultInvariantTest is SparkVaultTestBase {
         uint256 drip   = vault.drip();
 
         assertEq(nowChi, drip);
-    }
-
-    function invariant_call_summary() public view {
-        console.log("------------------");
-        console.log("\nCall Summary\n");
-
-        console.log("deposit",      handler.numCalls("deposit"));
-        console.log("mint",         handler.numCalls("mint"));
-        console.log("withdraw",     handler.numCalls("withdraw"));
-        console.log("redeem",       handler.numCalls("redeem"));
-        console.log("setVsrBounds", handler.numCalls("setVsrBounds"));
-        console.log("setVsr",       handler.numCalls("setVsr"));
-        console.log("warp",         handler.numCalls("warp"));
-        console.log("drip",         handler.numCalls("drip"));
-        console.log("take",         handler.numCalls("take"));
-        console.log("give",         handler.numCalls("give"));
     }
 
 }

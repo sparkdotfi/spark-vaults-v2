@@ -20,18 +20,26 @@ runs = 10000
 runs = 500000
 
 [invariant]
-runs           = 3     # The number of times to run the invariant tests
-depth          = 2000  # The number of calls to make in the invariant tests
-fail_on_revert = true  # Fail the invariant test if an error occurs
+runs             = 3      # The number of times to run the invariant tests
+depth            = 10_000 # The number of calls to make in the invariant tests
+fail_on_revert   = true   # Fail the invariant test if an error occurs
+shrink_run_limit = 50     # The number of times to shrink the invariant test
+show_metrics     = true   # Show the metrics of the invariant test
+show_solidity    = true   # Show the solidity code of the invariant test
 
 [profile.pr-ci.invariant]
-runs           = 6     # The number of times to run the invariant tests
-depth          = 2000  # The number of calls to make in the invariant tests
-fail_on_revert = true  # Fail the invariant test if an error occurs
+runs             = 50      # The number of times to run the invariant tests
+depth            = 10_000  # The number of calls to make in the invariant tests
+fail_on_revert   = true    # Fail the invariant test if an error occurs
+shrink_run_limit = 50      # The number of times to shrink the invariant test
+show_metrics     = true    # Show the metrics of the invariant test
+show_solidity    = true    # Show the solidity code of the invariant test
 
 [profile.master-ci.invariant]
-runs           = 50     # The number of times to run the invariant tests
-depth          = 2000  # The number of calls to make in the invariant tests
-fail_on_revert = true  # Fail the invariant test if an error occurs
-
+runs             = 50       # The number of times to run the invariant tests
+depth            = 100_000  # The number of calls to make in the invariant tests
+fail_on_revert   = true     # Fail the invariant test if an error occurs
+shrink_run_limit = 50       # The number of times to shrink the invariant test
+show_metrics     = true     # Show the metrics of the invariant test
+show_solidity    = true     # Show the solidity code of the invariant test
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
