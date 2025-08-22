@@ -14,7 +14,7 @@ contract FlowsErc4626 is Init {
 
         deal(address(asset), user, assetAmount);
         asset.approve(address(vault), assetAmount);
-        uint256 shareAmount = vault.deposit(assetAmount, address(user));
+        vault.deposit(assetAmount, address(user));
         lastBalanceOf[user] = vault.balanceOf(user);
         lastAssetsOf[user]  = vault.assetsOf(user);
         vm.stopPrank();

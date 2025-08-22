@@ -18,7 +18,7 @@ contract FlowsOther is FlowsErc4626 {
         vault.setVsrBounds(minVsr, maxVsr);
     }
 
-    function setVsr(bool authFail, uint256 failCallerSeed, uint256 vsr) public {
+    function setVsr(uint256 vsr) public {
         numCalls["setVsr"]++;
         vsr = _bound(vsr, vault.minVsr(), vault.maxVsr());
         vm.prank(setter);
