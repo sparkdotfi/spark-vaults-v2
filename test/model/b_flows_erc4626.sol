@@ -41,7 +41,7 @@ contract FlowsErc4626 is Init {
         uint256 effectiveAssets = Math.min(vault.assetsOf(user), asset.balanceOf(address(vault)));
         assetAmount = _bound(assetAmount, 0, effectiveAssets);
 
-        uint256 shareAmount = vault.withdraw(assetAmount, address(user), address(user));
+        vault.withdraw(assetAmount, address(user), address(user));
         lastBalanceOf[user] = vault.balanceOf(user);
         lastAssetsOf[user]  = vault.assetsOf(user);
         vm.stopPrank();
@@ -54,7 +54,7 @@ contract FlowsErc4626 is Init {
         uint256 effectiveShares = vault.convertToShares(effectiveAssets);
         shareAmount = _bound(shareAmount, 0, effectiveShares);
 
-        uint256 assetAmount = vault.redeem(shareAmount, address(user), address(user));
+        vault.redeem(shareAmount, address(user), address(user));
         lastBalanceOf[user] = vault.balanceOf(user);
         lastAssetsOf[user]  = vault.assetsOf(user);
         vm.stopPrank();

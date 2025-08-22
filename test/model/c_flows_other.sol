@@ -12,8 +12,8 @@ contract FlowsOther is FlowsErc4626 {
         uint256 maxVsr
     ) public {
         numCalls["setVsrBounds"]++;
-        minVsr = _bound(minVsr, RAY, FOUR_PCT_VSR); // between 0% and 4% apy
-        maxVsr = _bound(maxVsr, minVsr, MAX_VSR); // between minVsr and 100% apy
+        minVsr = _bound(minVsr, RAY,    FOUR_PCT_VSR);  // between 0% and 4% apy
+        maxVsr = _bound(maxVsr, minVsr, MAX_VSR);       // between minVsr and 100% apy
         vm.prank(admin);
         vault.setVsrBounds(minVsr, maxVsr);
     }

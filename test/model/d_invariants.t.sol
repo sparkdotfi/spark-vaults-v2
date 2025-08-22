@@ -59,7 +59,7 @@ contract SparkVaultInvariantTest is SparkVaultTestBase {
             address user          = handler.users(i);
             uint256 lastAssetsOf  = handler.lastAssetsOf(user);
             uint256 assetsOf      = vault.assetsOf(user);
-            assertLe(lastAssetsOf, assetsOf);
+            assertGe(assetsOf, lastAssetsOf);
         }
     }
 
