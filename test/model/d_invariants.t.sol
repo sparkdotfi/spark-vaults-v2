@@ -22,30 +22,30 @@ contract SparkVaultInvariantTest is SparkVaultTestBase {
         targetContract(address(handler));
     }
 
-    function invariants() public {
-        // These logs are for informational pursposes; they are for locating which invariant failed
-        // in the test trace.
-        console.log("inv_lastBalanceOf");
-        inv_lastBalanceOf();
-        console.log("inv_lastAssetsOf");
-        inv_lastAssetsOf();
-        console.log("inv_maxRedeem");
-        inv_maxRedeem();
-        console.log("inv_maxWithdraw");
-        inv_maxWithdraw();
-        console.log("inv_totalAssets");
-        inv_totalAssets();
-        console.log("inv_assetsOf");
-        inv_assetsOf();
-        console.log("inv_assetsOutstanding");
-        inv_assetsOutstanding();
-        console.log("inv_nowChi_eq_drip");
-        inv_nowChi_eq_drip();
-        console.log("inv_call_summary");
-        inv_call_summary();
-    }
+    // function invariants() public {
+    //     // These logs are for informational pursposes; they are for locating which invariant failed
+    //     // in the test trace.
+    //     console.log("inv_lastBalanceOf");
+    //     inv_lastBalanceOf();
+    //     console.log("inv_lastAssetsOf");
+    //     inv_lastAssetsOf();
+    //     console.log("inv_maxRedeem");
+    //     inv_maxRedeem();
+    //     console.log("inv_maxWithdraw");
+    //     inv_maxWithdraw();
+    //     console.log("inv_totalAssets");
+    //     inv_totalAssets();
+    //     console.log("inv_assetsOf");
+    //     inv_assetsOf();
+    //     console.log("inv_assetsOutstanding");
+    //     inv_assetsOutstanding();
+    //     console.log("inv_nowChi_eq_drip");
+    //     inv_nowChi_eq_drip();
+    //     console.log("inv_call_summary");
+    //     inv_call_summary();
+    // }
 
-    function inv_lastBalanceOf() internal view {
+    function invariant_lastBalanceOf() public view {
         for (uint256 i = 0; i < handler.N(); i++) {
             address user          = handler.users(i);
             uint256 lastBalanceOf = handler.lastBalanceOf(user);
@@ -54,7 +54,7 @@ contract SparkVaultInvariantTest is SparkVaultTestBase {
         }
     }
 
-    function inv_lastAssetsOf() internal view {
+    function invariant_lastAssetsOf() public view {
         for (uint256 i = 0; i < handler.N(); i++) {
             address user          = handler.users(i);
             uint256 lastAssetsOf  = handler.lastAssetsOf(user);
@@ -63,7 +63,7 @@ contract SparkVaultInvariantTest is SparkVaultTestBase {
         }
     }
 
-    function inv_maxRedeem() internal {
+    function invariant_maxRedeem() public {
         for (uint256 i = 0; i < handler.N(); i++) {
             address user      = handler.users(i);
             uint256 maxRedeem = vault.maxRedeem(user);
@@ -77,7 +77,7 @@ contract SparkVaultInvariantTest is SparkVaultTestBase {
 
     }
 
-    function inv_maxWithdraw() internal {
+    function invariant_maxWithdraw() public {
         for (uint256 i = 0; i < handler.N(); i++) {
             address user        = handler.users(i);
             uint256 maxWithdraw = vault.maxWithdraw(user);
@@ -92,7 +92,7 @@ contract SparkVaultInvariantTest is SparkVaultTestBase {
         }
     }
 
-    function inv_totalAssets() internal view {
+    function invariant_totalAssets() public view {
         uint256 totalAssets = vault.totalAssets();
         uint256 totalShares = vault.totalSupply();
 
@@ -105,7 +105,7 @@ contract SparkVaultInvariantTest is SparkVaultTestBase {
         }
     }
 
-    function inv_assetsOf() internal view {
+    function invariant_assetsOf() public view {
         for (uint256 i = 0; i < handler.N(); i++) {
             address user = handler.users(i);
             uint256 shares = vault.balanceOf(user);
@@ -122,7 +122,7 @@ contract SparkVaultInvariantTest is SparkVaultTestBase {
         }
     }
 
-    function inv_assetsOutstanding() internal view {
+    function invariant_assetsOutstanding() public view {
         uint256 assets = vault.totalAssets();
         uint256 assetBalance   = asset.balanceOf(address(vault));
 
@@ -133,14 +133,14 @@ contract SparkVaultInvariantTest is SparkVaultTestBase {
         }
     }
 
-    function inv_nowChi_eq_drip() internal {
+    function invariant_nowChi_eq_drip() public {
         uint256 nowChi = vault.nowChi();
         uint256 drip = vault.drip();
 
         assertEq(nowChi, drip);
     }
 
-    function inv_call_summary() internal view { // make external to enable
+    function invariant_call_summary() public view {
         console.log("------------------");
         console.log("\nCall Summary\n");
 
