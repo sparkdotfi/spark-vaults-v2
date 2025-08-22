@@ -84,5 +84,5 @@ forge test
 ---
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/799b4fb1-d858-4847-b5f0-4c13741d531a" />
+  <img src="https://github.com/user-attachments/assets/c83ef7e4-fae1-4c5c-8cff-99494ef75962" />
 </p>
