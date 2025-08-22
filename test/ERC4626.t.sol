@@ -50,7 +50,7 @@ contract SparkVaultERC4626StandardTest is ERC4626Test, SparkVaultTestBase {
         // Make assumptions about init
         for (uint256 i = 0; i < N; i++) {
             init.share[i] = _bound(init.share[i], 0, 1_000_000_000e18 - 1);
-            init.share[i] = _bound(init.asset[i], 0, 1_000_000_000e18 - 1);
+            init.asset[i] = _bound(init.asset[i], 0, 1_000_000_000e18 - 1);
             vm.assume(init.user[i] != address(0) && init.user[i] != address(vault));
         }
         // Call the parent to set up the vault
