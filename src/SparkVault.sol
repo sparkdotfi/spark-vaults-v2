@@ -111,7 +111,7 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
     function setVsrBounds(uint256 minVsr_, uint256 maxVsr_) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(minVsr_ >= RAY,     "SparkVault/vsr-too-low");
         require(maxVsr_ <= MAX_VSR, "SparkVault/vsr-too-high");
-        require(minVsr_ <= maxVsr_, "SparkVault/min-vsr-too-high");
+        require(minVsr_ <= maxVsr_, "SparkVault/min-vsr-gt-max-vsr");
 
         emit VsrBoundsSet(minVsr, maxVsr, minVsr_, maxVsr_);
 
