@@ -22,29 +22,6 @@ contract SparkVaultInvariantTest is SparkVaultTestBase {
         targetContract(address(handler));
     }
 
-    // function invariants() public {
-    //     // These logs are for informational pursposes; they are for locating which invariant failed
-    //     // in the test trace.
-    //     console.log("inv_lastBalanceOf");
-    //     inv_lastBalanceOf();
-    //     console.log("inv_lastAssetsOf");
-    //     inv_lastAssetsOf();
-    //     console.log("inv_maxRedeem");
-    //     inv_maxRedeem();
-    //     console.log("inv_maxWithdraw");
-    //     inv_maxWithdraw();
-    //     console.log("inv_totalAssets");
-    //     inv_totalAssets();
-    //     console.log("inv_assetsOf");
-    //     inv_assetsOf();
-    //     console.log("inv_assetsOutstanding");
-    //     inv_assetsOutstanding();
-    //     console.log("inv_nowChi_eq_drip");
-    //     inv_nowChi_eq_drip();
-    //     console.log("inv_call_summary");
-    //     inv_call_summary();
-    // }
-
     function invariant_lastBalanceOf() public view {
         for (uint256 i = 0; i < handler.N(); i++) {
             address user          = handler.users(i);
