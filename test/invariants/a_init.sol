@@ -29,8 +29,6 @@ contract Init is Test {
     SparkVault vault;
 
     // Handler specific storage
-    mapping(bytes32 => uint256) public numCalls;
-
     uint256 public constant N = 5;
 
     address[N] public users;
@@ -55,8 +53,8 @@ contract Init is Test {
         asset = MockERC20(vault.asset());
 
         admin  = vault.getRoleMember(DEFAULT_ADMIN_ROLE, 0);
-        setter = vault.getRoleMember(SETTER_ROLE, 0);
-        taker  = vault.getRoleMember(TAKER_ROLE, 0);
+        setter = vault.getRoleMember(SETTER_ROLE,        0);
+        taker  = vault.getRoleMember(TAKER_ROLE,         0);
 
         for (uint256 i = 0; i < N; i++) {
             users[i] = makeAddr(string(abi.encodePacked("user", i)));

@@ -8,7 +8,6 @@ contract FlowsErc4626 is Init {
     constructor(address _vault) Init(_vault) {}
 
     function deposit(uint256 assetAmount, uint32 userIndex) public totalAssetsCheck accountingCheck {
-        numCalls["deposit"]++;
         address user = getRandomUser(userIndex);
         assetAmount  = _bound(assetAmount, 0, 10_000_000_000 * 10 ** asset.decimals());
 
@@ -21,7 +20,6 @@ contract FlowsErc4626 is Init {
     }
 
     function mint(uint256 shareAmount, uint32 userIndex) public totalAssetsCheck accountingCheck {
-        numCalls["mint"]++;
         address user = getRandomUser(userIndex);
         shareAmount = _bound(shareAmount, 0, 10_000_000_000 * 10 ** vault.decimals());
 
@@ -36,7 +34,6 @@ contract FlowsErc4626 is Init {
     }
 
     function withdraw(uint256 assetAmount, uint32 userIndex) public accountingCheck {
-        numCalls["withdraw"]++;
         address user = getRandomUser(userIndex);
         uint256 effectiveAssets = Math.min(vault.assetsOf(user), asset.balanceOf(address(vault)));
         assetAmount = _bound(assetAmount, 0, effectiveAssets);
@@ -48,7 +45,6 @@ contract FlowsErc4626 is Init {
     }
 
     function redeem(uint256 shareAmount, uint32 userIndex) public accountingCheck {
-        numCalls["redeem"]++;
         address user = getRandomUser(userIndex);
         uint256 effectiveAssets = Math.min(vault.assetsOf(user), asset.balanceOf(address(vault)));
         uint256 effectiveShares = vault.convertToShares(effectiveAssets);
