@@ -19,4 +19,29 @@ runs = 10000
 [profile.master-ci.fuzz]
 runs = 500000
 
+[invariant]
+runs             = 3
+depth            = 5_000
+fail_on_revert   = true
+shrink_run_limit = 50
+show_metrics     = true
+show_solidity    = true
+
+[profile.pr-ci.invariant]
+runs             = 5
+depth            = 10_000
+fail_on_revert   = true
+shrink_run_limit = 50
+show_metrics     = true
+show_solidity    = true
+
+[profile.master-ci.invariant]
+runs             = 50
+depth            = 100_000
+fail_on_revert   = true
+shrink_run_limit = 50
+show_metrics     = true
+show_solidity    = true
+timeout          = 18_000
+
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config

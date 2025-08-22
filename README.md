@@ -1,7 +1,8 @@
 # Spark Vaults V2
 
+![Foundry CI](https://github.com/sparkdotfi/spark-vaults-v2/actions/workflows/merge.yml/badge.svg)
 [![Foundry][foundry-badge]][foundry]
-[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://github.com/{org}/{repo}/blob/master/LICENSE)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://github.com/sparkdotfi/spark-vaults-v2/blob/master/LICENSE)
 
 [foundry]: https://getfoundry.sh/
 [foundry-badge]: https://img.shields.io/badge/Built%20with-Foundry-FFDB1C.svg
@@ -78,3 +79,10 @@ forge build
 
 ```bash
 forge test
+```
+
+---
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/c83ef7e4-fae1-4c5c-8cff-99494ef75962" height="100"/>
+</p>
