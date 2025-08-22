@@ -79,6 +79,7 @@ forge build
 
 ```bash
 forge test
+```
 
 ---
 
