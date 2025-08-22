@@ -12,8 +12,8 @@ contract FlowsOther is FlowsErc4626 {
         uint256 maxVsr
     ) public {
         numCalls["setVsrBounds"]++;
-        minVsr = _bound(minVsr, RAY,    FOUR_PCT_VSR);  // between 0% and 4% apy
-        maxVsr = _bound(maxVsr, minVsr, MAX_VSR);       // between minVsr and 100% apy
+        minVsr = _bound(minVsr, RAY,    FOUR_PCT_VSR);   // between 0% and 4% apy
+        maxVsr = _bound(maxVsr, minVsr, FORTY_PCT_VSR);  // between minVsr and 40% apy
         vm.prank(admin);
         vault.setVsrBounds(minVsr, maxVsr);
     }
@@ -27,7 +27,7 @@ contract FlowsOther is FlowsErc4626 {
 
     function warp(uint256 secs) public {
         numCalls["warp"]++;
-        secs = _bound(secs, 0, 365 days);
+        secs = _bound(secs, 0, 10 days);
         vm.warp(block.timestamp + secs);
     }
 

@@ -64,7 +64,7 @@ contract SparkVaultInvariantTest is SparkVaultTestBase {
             // (SparkVault/insufficient-balance)
             vm.expectRevert();
             vault.withdraw(maxWithdraw + 2, user, user);
-            vault.withdraw(maxWithdraw, user, user);
+            vault.withdraw(maxWithdraw,     user, user);
             vm.stopPrank();
         }
     }
@@ -84,7 +84,7 @@ contract SparkVaultInvariantTest is SparkVaultTestBase {
 
     function invariant_assetsOf() public view {
         for (uint256 i = 0; i < handler.N(); i++) {
-            address user = handler.users(i);
+            address user   = handler.users(i);
             uint256 shares = vault.balanceOf(user);
             uint256 assets = vault.assetsOf(user);
 
@@ -100,7 +100,7 @@ contract SparkVaultInvariantTest is SparkVaultTestBase {
     }
 
     function invariant_assetsOutstanding() public view {
-        uint256 assets = vault.totalAssets();
+        uint256 assets         = vault.totalAssets();
         uint256 assetBalance   = asset.balanceOf(address(vault));
 
         if (assets >= assetBalance) {
@@ -112,7 +112,7 @@ contract SparkVaultInvariantTest is SparkVaultTestBase {
 
     function invariant_nowChi_eq_drip() public {
         uint256 nowChi = vault.nowChi();
-        uint256 drip = vault.drip();
+        uint256 drip   = vault.drip();
 
         assertEq(nowChi, drip);
     }

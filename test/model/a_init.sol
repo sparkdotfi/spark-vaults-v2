@@ -12,9 +12,10 @@ contract Init is Test {
     uint256 constant RAY = 10 ** 27;
 
     // Common storage
-    uint256 constant ONE_PCT_VSR  = 1.000000000315522921573372069e27;
-    uint256 constant FOUR_PCT_VSR = 1.000000001243680656318820312e27;
-    uint256 constant MAX_VSR      = 1.000000021979553151239153027e27;  // 100% APY
+    uint256 constant ONE_PCT_VSR   = 1.000000000315522921573372069e27;
+    uint256 constant FOUR_PCT_VSR  = 1.000000001243680656318820312e27;
+    uint256 constant FORTY_PCT_VSR = 1.000000010669464688489416886e27;  // 40% APY
+    uint256 constant MAX_VSR       = 1.000000021979553151239153027e27;  // 100% APY
 
     address admin;
     address setter;
