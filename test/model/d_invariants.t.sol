@@ -29,8 +29,6 @@ contract SparkVaultInvariantTest is SparkVaultTestBase {
         inv_lastBalanceOf();
         console.log("inv_lastAssetsOf");
         inv_lastAssetsOf();
-        // inv_maxDeposit();
-        // inv_maxMint();
         console.log("inv_maxRedeem");
         inv_maxRedeem();
         console.log("inv_maxWithdraw");
@@ -65,46 +63,14 @@ contract SparkVaultInvariantTest is SparkVaultTestBase {
         }
     }
 
-    // TODO: Decide what to do with this
-    // function inv_maxDeposit() internal {
-    // }
-
-    // TODO: Decide what to do with this
-    // function inv_maxMint() internal {
-    //     for (uint256 i = 0; i < handler.N(); i++) {
-    //         address user    = handler.users(i);
-    //         uint256 shares  = vault.balanceOf(user);
-    //         uint256 maxMint = vault.maxMint(user);
-    //         vm.startPrank(user);
-    //         deal(address(asset), user, type(uint256).max);
-    //         asset.approve(address(vault), type(uint256).max);
-    //
-    //         if (maxMint == type(uint256).max) {
-    //             // See if it is really possible
-    //             uint256 assets = vault.previewMint(maxMint);
-    //             vault.mint(maxMint, user);
-    //             return;
-    //         }
-    //
-    //         vm.expectRevert();
-    //         vault.mint(maxMint + 1, user);
-    //         vault.mint(maxMint, user);
-    //     }
-    // }
-
     function inv_maxRedeem() internal {
         for (uint256 i = 0; i < handler.N(); i++) {
             address user      = handler.users(i);
             uint256 maxRedeem = vault.maxRedeem(user);
 
             vm.startPrank(user);
-            // There will EITHER be not enough liquidity (SparkVault/insufficient-liquidity) (if
-            // take is run) OR the user will not have enough assets
             vm.expectRevert();
-            vault.redeem(maxRedeem + 1, user, user);
-            if (maxRedeem > 0) {
-                maxRedeem -= 1;
-            }
+            vault.redeem(maxRedeem + 2, user, user);
             vault.redeem(maxRedeem, user, user);
             vm.stopPrank();
         }
@@ -120,7 +86,7 @@ contract SparkVaultInvariantTest is SparkVaultTestBase {
             // take is run) OR the user will not have enough assets
             // (SparkVault/insufficient-balance)
             vm.expectRevert();
-            vault.withdraw(maxWithdraw + 1, user, user);
+            vault.withdraw(maxWithdraw + 2, user, user);
             vault.withdraw(maxWithdraw, user, user);
             vm.stopPrank();
         }
