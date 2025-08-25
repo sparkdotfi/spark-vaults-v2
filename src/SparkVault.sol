@@ -119,15 +119,15 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
         maxVsr = maxVsr_;
     }
 
-    function setVsr(uint256 data) external onlyRole(SETTER_ROLE) {
-        require(data >= minVsr, "SparkVault/vsr-too-low");
-        require(data <= maxVsr, "SparkVault/vsr-too-high");
+    function setVsr(uint256 newVsr) external onlyRole(SETTER_ROLE) {
+        require(newVsr >= minVsr, "SparkVault/vsr-too-low");
+        require(newVsr <= maxVsr, "SparkVault/vsr-too-high");
 
         drip();
         uint256 vsr_ = vsr;
-        vsr = data;
+        vsr = newVsr;
 
-        emit VsrSet(msg.sender, vsr_, data);
+        emit VsrSet(msg.sender, vsr_, newVsr);
     }
 
     function take(uint256 value) external onlyRole(TAKER_ROLE) {
