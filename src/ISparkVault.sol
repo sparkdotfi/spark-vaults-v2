@@ -26,7 +26,7 @@ interface ISparkVault is IERC20Permit, IERC4626, IAccessControlEnumerable {
     /**
      * @notice Emitted every time drip() is called.
      * @param  chi  The new rate accumulator value after the drip operation [ray]
-     * @param  diff The difference in total assets due to the rate accumulation [wei]
+     * @param  diff The difference in total assets due to the rate accumulation [asset units]
      */
     event Drip(uint256 chi, uint256 diff);
 
@@ -41,8 +41,8 @@ interface ISparkVault is IERC20Permit, IERC4626, IAccessControlEnumerable {
 
     /**
      * @notice Emitted when the maximum deposit cap is updated.
-     * @param  oldCap The previous maximum deposit cap [wei]
-     * @param  newCap The new maximum deposit cap [wei]
+     * @param  oldCap The previous maximum deposit cap [asset units]
+     * @param  newCap The new maximum deposit cap [asset units]
      */
     event DepositCapSet(uint256 oldCap, uint256 newCap);
 
@@ -66,7 +66,7 @@ interface ISparkVault is IERC20Permit, IERC4626, IAccessControlEnumerable {
     /**
      * @notice Emitted when assets are withdrawn from the vault by accounts with TAKER_ROLE.
      * @param  to    The address receiving the withdrawn assets
-     * @param  value The amount of assets withdrawn from the vault [wei]
+     * @param  value The amount of assets withdrawn from the vault [asset units]
      */
     event Take(address indexed to, uint256 value);
 
@@ -106,7 +106,7 @@ interface ISparkVault is IERC20Permit, IERC4626, IAccessControlEnumerable {
      * @notice Sets the deposit cap for the vault.
      * @dev    This function can only be called by accounts with DEFAULT_ADMIN_ROLE.
                Deposits (and mints) are disabled if it would put totalAssets() above this value
-     * @param  newCap The new deposit cap value [wei]
+     * @param  newCap The new deposit cap value [asset units]
      */
     function setDepositCap(uint256 newCap) external;
 
