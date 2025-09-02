@@ -290,6 +290,19 @@ contract SparkVaultDepositFailureTests is SparkVaultTestBase {
         vault.deposit(amount, address(vault));
     }
 
+    function test_deposit_revertsSenderTaker() public {
+        uint256 amount = 1_000_000e6;
+        vm.expectRevert("SparkVault/taker-cannot-deposit");
+        vm.prank(taker);
+        vault.deposit(amount, taker);
+    }
+
+    function test_deposit_revertsReceiverTaker() public {
+        uint256 amount = 1_000_000e6;
+        vm.expectRevert("SparkVault/taker-cannot-be-receiver");
+        vault.deposit(amount, taker);
+    }
+
 }
 
 contract SparkVaultDepositSuccessTests is SparkVaultTestBase {
@@ -345,6 +358,19 @@ contract SparkVaultMintFailureTests is SparkVaultTestBase {
         uint256 shares = 1_000_000e6;
         vm.expectRevert("SparkVault/invalid-address");
         vault.mint(shares, address(vault));
+    }
+
+    function test_mint_revertsSenderTaker() public {
+        uint256 shares = 1_000_000e6;
+        vm.expectRevert("SparkVault/taker-cannot-mint");
+        vm.prank(taker);
+        vault.mint(shares, taker);
+    }
+
+    function test_mint_revertsReceiverTaker() public {
+        uint256 shares = 1_000_000e6;
+        vm.expectRevert("SparkVault/taker-cannot-be-receiver");
+        vault.mint(shares, taker);
     }
 
 }
