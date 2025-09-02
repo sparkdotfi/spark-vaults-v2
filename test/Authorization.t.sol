@@ -214,7 +214,6 @@ contract SparkVaultSetDepositCapSuccessTests is SparkVaultTestBase {
         vm.expectRevert("SparkVault/deposit-cap-exceeded");
         vault.deposit(1, randomUser);
         vm.stopPrank();
-
     }
 
 }
