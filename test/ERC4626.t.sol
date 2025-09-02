@@ -294,7 +294,7 @@ contract SparkVaultDepositFailureTests is SparkVaultTestBase {
         uint256 amount = 1_000_000e6;
         vm.expectRevert("SparkVault/taker-cannot-deposit");
         vm.prank(taker);
-        vault.deposit(amount, taker);
+        vault.deposit(amount, makeAddr("randomUser"));
     }
 
     function test_deposit_revertsReceiverTaker() public {
@@ -364,7 +364,7 @@ contract SparkVaultMintFailureTests is SparkVaultTestBase {
         uint256 shares = 1_000_000e6;
         vm.expectRevert("SparkVault/taker-cannot-deposit");
         vm.prank(taker);
-        vault.mint(shares, address(0xbeef));
+        vault.mint(shares, makeAddr("randomUser"));
     }
 
     function test_mint_revertsReceiverTaker() public {
