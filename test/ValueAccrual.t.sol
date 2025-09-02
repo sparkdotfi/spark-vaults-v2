@@ -92,6 +92,9 @@ contract ValueAccrualE2ETest is SparkVaultTestBase {
 
         // Step 5: User 2 deposits 1M assets
 
+        vm.prank(admin);
+        vault.setDepositCap(2_100_000e6);
+
         vm.startPrank(user2);
         asset.approve(address(vault), 1_000_000e6);
         vault.deposit(1_000_000e6, user2);
@@ -295,6 +298,9 @@ contract ValueAccrualE2ETest is SparkVaultTestBase {
         _assertTestState(state, 1);
 
         // Step 5: User 2 deposits assets
+
+        vm.prank(admin);
+        vault.setDepositCap(2_100_000e6);
 
         vm.startPrank(user2);
         asset.approve(address(vault), user2Deposit);

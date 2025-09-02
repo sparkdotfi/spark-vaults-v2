@@ -16,6 +16,10 @@ contract SparkVaultInvariantTest is SparkVaultTestBase {
     function setUp() public override {
         super.setUp();
 
+        // For the purposes of these tests, set unlimited deposit cap
+        vm.prank(admin);
+        vault.setDepositCap(type(uint256).max);
+
         handler = new FlowsOther(address(vault));
 
         // Foundry will call only this contract's functions

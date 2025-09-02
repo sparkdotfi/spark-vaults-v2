@@ -41,6 +41,7 @@ contract SparkVaultTestBase is Test {
         vm.startPrank(admin);
         vault.grantRole(SETTER_ROLE, setter);
         vault.grantRole(TAKER_ROLE,  taker);
+        vault.setDepositCap(1_000_000e6);
         vm.stopPrank();
     }
 

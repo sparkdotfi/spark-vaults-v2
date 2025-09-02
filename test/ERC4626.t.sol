@@ -18,6 +18,10 @@ contract SparkVaultERC4626StandardTest is ERC4626Test, SparkVaultTestBase {
     function setUp() public virtual override(ERC4626Test, SparkVaultTestBase) {
         super.setUp();
 
+        // For the purposes of this test, set unlimited deposit cap
+        vm.prank(admin);
+        vault.setDepositCap(type(uint256).max);
+
         vm.startPrank(admin);
         vault.setVsrBounds(
             1e27, // minVsr
@@ -94,6 +98,9 @@ contract SparkVaultERC4626Test is SparkVaultTestBase {
     // Do a deposit to get non-zero state
     function setUp() public override {
         super.setUp();
+
+        vm.prank(admin);
+        vault.setDepositCap(2_100_000e6);
 
         vm.prank(admin);
         vault.setVsrBounds(ONE_PCT_VSR, FOUR_PCT_VSR);
