@@ -168,6 +168,40 @@ contract SparkVaultRevokeRoleSuccessTests is SparkVaultGrantRoleSuccessTests {
 
 }
 
+contract SparkVaultSetDepositCapFailureTests is SparkVaultTestBase {
+
+    function test_setDepositCap_notAdmin() public {
+        vm.expectRevert(abi.encodeWithSignature(
+            "AccessControlUnauthorizedAccount(address,bytes32)",
+            address(this),
+            DEFAULT_ADMIN_ROLE
+        ));
+        vault.setDepositCap(2_000_000e6);
+    }
+
+}
+
+contract SparkVaultSetDepositCapSuccessTests is SparkVaultTestBase {
+
+    event DepositCapSet(uint256 oldCap, uint256 newCap);
+
+    function test_setDepositCap() public {
+        assertEq(vault.depositCap(), 1_000_000e6);
+
+        vm.startPrank(admin);
+        vm.expectEmit(true, true, true, true, address(vault));
+        emit DepositCapSet(1_000_000e6, 2_000_000e6);
+        vault.setDepositCap(2_000_000e6);
+        assertEq(vault.depositCap(), 2_000_000e6);
+
+        vm.expectEmit(true, true, true, true, address(vault));
+        emit DepositCapSet(2_000_000e6, type(uint256).max);
+        vault.setDepositCap(type(uint256).max);
+        assertEq(vault.depositCap(), type(uint256).max);
+    }
+
+}
+
 contract SparkVaultSetVsrFailureTests is SparkVaultTestBase {
 
     function test_setVsr_notSetter() public {
