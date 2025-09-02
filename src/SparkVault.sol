@@ -67,7 +67,6 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
     uint256 public minVsr; // The minimum Vault Savings Rate [ray]
     uint256 public maxVsr; // The maximum Vault Savings Rate [ray]
 
-    // Deposits (and mints) are disabled if it would put totalAssets() above this value [wad/wei]
     uint256 public depositCap;
     uint256 public totalSupply;
 

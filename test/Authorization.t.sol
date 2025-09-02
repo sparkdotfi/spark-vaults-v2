@@ -189,15 +189,32 @@ contract SparkVaultSetDepositCapSuccessTests is SparkVaultTestBase {
         assertEq(vault.depositCap(), 1_000_000e6);
 
         vm.startPrank(admin);
-        vm.expectEmit(true, true, true, true, address(vault));
+        vm.expectEmit(address(vault));
         emit DepositCapSet(1_000_000e6, 2_000_000e6);
         vault.setDepositCap(2_000_000e6);
+
         assertEq(vault.depositCap(), 2_000_000e6);
 
-        vm.expectEmit(true, true, true, true, address(vault));
+        vm.expectEmit(address(vault));
         emit DepositCapSet(2_000_000e6, type(uint256).max);
         vault.setDepositCap(type(uint256).max);
+
         assertEq(vault.depositCap(), type(uint256).max);
+
+        vm.expectEmit(address(vault));
+        emit DepositCapSet(type(uint256).max, 0);
+        vault.setDepositCap(0);
+
+        assertEq(vault.depositCap(), 0);
+
+        address randomUser = makeAddr("randomUser");
+        vm.startPrank(randomUser);
+        deal(address(asset), randomUser, 1);
+        asset.approve(address(vault), 1);
+        vm.expectRevert("SparkVault/deposit-cap-exceeded");
+        vault.deposit(1, randomUser);
+        vm.stopPrank();
+
     }
 
 }
