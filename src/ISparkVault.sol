@@ -40,6 +40,13 @@ interface ISparkVault is IERC20Permit, IERC4626, IAccessControlEnumerable {
     event Referral(uint16 indexed referral, address indexed owner, uint256 assets, uint256 shares);
 
     /**
+     * @notice Emitted when the maximum deposit cap is updated.
+     * @param  oldCap The previous maximum deposit cap [wei]
+     * @param  newCap The new maximum deposit cap [wei]
+     */
+    event DepositCapSet(uint256 oldCap, uint256 newCap);
+
+    /**
      * @notice Emitted when the bounds for the Vault Savings Rate (VSR) are updated.
      * @param  oldMinVsr The previous minimum allowed VSR value [ray]
      * @param  oldMaxVsr The previous maximum allowed VSR value [ray]
@@ -96,13 +103,21 @@ interface ISparkVault is IERC20Permit, IERC4626, IAccessControlEnumerable {
     function rho() external view returns (uint64);
 
     /**
+     * @notice Sets the deposit cap for the vault.
+     * @dev    This function can only be called by accounts with DEFAULT_ADMIN_ROLE.
+               Deposits (and mints) are disabled if it would put totalAssets() above this value
+     * @param  newCap The new deposit cap value [wei]
+     */
+    function setDepositCap(uint256 newCap) external;
+
+    /**
      * @notice Sets the Vault Savings Rate (VSR) within the configured bounds.
      * @dev    This function can only be called by accounts with SETTER_ROLE.
      *         The VSR determines the rate at which user shares grow over time. A higher VSR
      *         means faster share growth and higher yields for depositors.
-     * @param  data The new VSR value [ray]
+     * @param  newVsr The new VSR value [ray]
      */
-    function setVsr(uint256 data) external;
+    function setVsr(uint256 newVsr) external;
 
     /**
      * @notice Sets the bounds for the Vault Savings Rate (VSR).
