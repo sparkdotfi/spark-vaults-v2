@@ -17,10 +17,11 @@
 
 pragma solidity >=0.8.0;
 
-import { IERC4626 }     from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
-import { IERC20Permit } from "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Permit.sol";
+import { IAccessControlEnumerable } from "openzeppelin-contracts/contracts/access/extensions/IAccessControlEnumerable.sol";
+import { IERC4626 }               from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
+import { IERC20Permit }           from "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Permit.sol";
 
-interface ISparkVault is IERC20Permit, IERC4626 {
+interface ISparkVault is IERC20Permit, IERC4626, IAccessControlEnumerable {
 
     /**
      * @notice Emitted every time drip() is called.
@@ -73,6 +74,12 @@ interface ISparkVault is IERC20Permit, IERC4626 {
     function chi() external view returns (uint192);
 
     /**
+     * @notice Returns the current rate accumulator (chi) calculated up to the current block timestamp.
+     * @return The current rate accumulator value [ray]
+     */
+    function nowChi() external view returns (uint256);
+
+    /**
      * @notice Updates the rate accumulator and returns the new value.
      * @dev    This function calculates the new chi value based on the time elapsed since the last drip
      *         and the current VSR. The formula used is:
@@ -96,6 +103,14 @@ interface ISparkVault is IERC20Permit, IERC4626 {
      * @param  data The new VSR value [ray]
      */
     function setVsr(uint256 data) external;
+
+    /**
+     * @notice Sets the bounds for the Vault Savings Rate (VSR).
+     * @dev    This function can only be called by accounts with DEFAULT_ADMIN_ROLE.
+     * @param  minVsr_ The new minimum allowed VSR value [ray]
+     * @param  maxVsr_ The new maximum allowed VSR value [ray]
+     */
+    function setVsrBounds(uint256 minVsr_, uint256 maxVsr_) external;
 
     /**
      * @notice Returns the current Vault Savings Rate (VSR).
