@@ -140,7 +140,7 @@ contract SparkVaultConvenienceViewFunctionTests is SparkVaultTestBase {
         assertEq(vault.nowChi(),            1.000005568121819975177325790e27);
     }
 
-function test_assetsOutstanding_returnsZeroOverLiquidityBoundary() public {
+    function test_assetsOutstanding_returnsZeroOverLiquidityBoundary() public {
         vm.prank(admin);
         vault.setVsrBounds(ONE_PCT_VSR, FOUR_PCT_VSR);
 
