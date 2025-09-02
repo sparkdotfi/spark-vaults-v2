@@ -422,8 +422,11 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
 
     function _mint(uint256 assets, uint256 shares, address receiver) internal {
         require(receiver != address(0) && receiver != address(this), "SparkVault/invalid-address");
-        require(!hasRole(TAKER_ROLE, msg.sender) && !hasRole(TAKER_ROLE, receiver),
-            "SparkVault/taker-cannot-deposit");
+
+        require(
+            !hasRole(TAKER_ROLE, msg.sender) && !hasRole(TAKER_ROLE, receiver),
+            "SparkVault/taker-cannot-deposit"
+        );
 
         _pullAsset(msg.sender, assets);
 
