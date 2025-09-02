@@ -266,6 +266,8 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
     /**********************************************************************************************/
 
     function deposit(uint256 assets, address receiver) public returns (uint256 shares) {
+        require(!hasRole(TAKER_ROLE, msg.sender), "SparkVault/taker-cannot-deposit");
+        require(!hasRole(TAKER_ROLE, receiver),   "SparkVault/taker-cannot-be-receiver");
         shares = assets * RAY / drip();
         _mint(assets, shares, receiver);
     }
@@ -273,11 +275,14 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
     function deposit(uint256 assets, address receiver, uint16 referral)
         external returns (uint256 shares)
     {
+        // NOTE: msg.sender nor receiver can be TAKER_ROLE by `deposit(uint256,address)`
         shares = deposit(assets, receiver);
         emit Referral(referral, receiver, assets, shares);
     }
 
     function mint(uint256 shares, address receiver) public returns (uint256 assets) {
+        require(!hasRole(TAKER_ROLE, msg.sender), "SparkVault/taker-cannot-mint");
+        require(!hasRole(TAKER_ROLE, receiver),   "SparkVault/taker-cannot-be-receiver");
         assets = _divup(shares * drip(), RAY);
         _mint(assets, shares, receiver);
     }
@@ -285,6 +290,7 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
     function mint(uint256 shares, address receiver, uint16 referral)
         external returns (uint256 assets)
     {
+        // NOTE: msg.sender nor receiver can be TAKER_ROLE by `mint(uint256,address)`
         assets = mint(shares, receiver);
         emit Referral(referral, receiver, assets, shares);
     }
