@@ -18,8 +18,8 @@
 pragma solidity >=0.8.0;
 
 import { IAccessControlEnumerable } from "openzeppelin-contracts/contracts/access/extensions/IAccessControlEnumerable.sol";
-import { IERC4626 }               from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
-import { IERC20Permit }           from "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Permit.sol";
+import { IERC4626 }                 from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
+import { IERC20Permit }             from "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Permit.sol";
 
 interface ISparkVault is IERC20Permit, IERC4626, IAccessControlEnumerable {
 
