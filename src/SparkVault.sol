@@ -327,7 +327,7 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
         // => d <= depositCap - totalAssets()
         uint256 totalAssets_ = totalAssets();
         uint256 depositCap_  = depositCap;
-        return totalAssets_ >= depositCap_ ? 0 : depositCap_ - totalAssets_;
+        return depositCap_ <= totalAssets_ ? 0 : depositCap_ - totalAssets_;
     }
 
     function maxMint(address) external view returns (uint256) {
@@ -346,7 +346,7 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
         uint256 totalAssets_ = totalAssets();
         uint256 depositCap_  = depositCap;
 
-        if (totalAssets_ >= depositCap_) return 0;
+        if (depositCap_ <= totalAssets_) return 0;
 
         uint256 remainingAssets = depositCap_ - totalAssets_;
 

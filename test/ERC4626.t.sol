@@ -166,6 +166,48 @@ contract SparkVaultERC4626Test is SparkVaultTestBase {
         vault.previewWithdraw(assets);
     }
 
+    function test_maxDeposit_depositCapLeTotalAssets() public {
+        // Deposit cap is currently 2_100_000e6 and total assets is slightly above 1_000_000e6
+        vm.prank(admin);
+        vault.setDepositCap(1_000_000e6);
+
+        uint256 maxDepositUser1 = vault.maxDeposit(user1);
+        uint256 maxDepositUser2 = vault.maxDeposit(user2);
+
+        assertEq(maxDepositUser1, 0);
+        assertEq(maxDepositUser2, 0);
+    }
+
+    function test_maxDeposit_depositCapGtTotalAssets() public {
+        // Deposit cap is currently 2_100_000e6 and total assets is slightly above 1_000_000e6
+        uint256 maxDepositUser1 = vault.maxDeposit(user1);
+        uint256 maxDepositUser2 = vault.maxDeposit(user2);
+
+        assertEq(maxDepositUser1, 1_099_892.540218e6);
+        assertEq(maxDepositUser2, 1_099_892.540218e6);
+    }
+
+    function test_maxMint_depositCapLeTotalAssets() public {
+        // Deposit cap is currently 2_100_000e6 and total assets is slightly above 1_000_000e6
+        vm.prank(admin);
+        vault.setDepositCap(1_000_000e6);
+
+        uint256 maxMintUser1 = vault.maxMint(user1);
+        uint256 maxMintUser2 = vault.maxMint(user2);
+
+        assertEq(maxMintUser1, 0);
+        assertEq(maxMintUser2, 0);
+    }
+
+    function test_maxMint_depositCapGtTotalAssets() public {
+        // Deposit cap is currently 2_100_000e6 and total assets is slightly above 1_000_000e6
+        uint256 maxMintUser1 = vault.maxMint(user1);
+        uint256 maxMintUser2 = vault.maxMint(user2);
+
+        assertEq(maxMintUser1, 1_099_774.358705e6);
+        assertEq(maxMintUser2, 1_099_774.358705e6);
+    }
+
     function test_maxRedeem_liquidityLessThanAmount() public {
         // Deal value accrued to the vault
         deal(address(asset), address(vault), totalAssets);
