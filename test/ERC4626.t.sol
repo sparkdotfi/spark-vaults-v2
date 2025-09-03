@@ -308,6 +308,7 @@ contract SparkVaultDepositFailureTests is SparkVaultTestBase {
         uint256 amount = 1_000_000e6;
         vm.expectRevert("SparkVault/taker-cannot-deposit");
         vault.deposit(amount, taker);
+    }
 
     function test_deposit_revertsExceedsDepositCapBoundary() public {
         // Deposit cap is currently 1_000_000e6 and there are no deposits
@@ -394,6 +395,7 @@ contract SparkVaultMintFailureTests is SparkVaultTestBase {
         uint256 shares = 1_000_000e6;
         vm.expectRevert("SparkVault/taker-cannot-deposit");
         vault.mint(shares, taker);
+    }
 
     function test_mint_revertsExceedsDepositCapBoundary() public {
         // Deposit cap is currently 1_000_000e6 and there are no deposits
@@ -605,6 +607,37 @@ contract SparkVaultWithdrawSuccessTests is SparkVaultTestBase {
         assertEq(asset.balanceOf(randomUser),     assets);
     }
 
+    function test_withdraw_depositCapExceeded() public {
+        uint256 assets = vault.assetsOf(user1);
+
+        assertEq(assets, 1_000_107.459782e6);
+
+        // Deal value accrued to the vault
+        deal(address(asset), address(vault), 1_000_107.459782e6);
+
+        assertEq(vault.totalSupply(),             1_000_000e6);
+        assertEq(vault.balanceOf(user1),          1_000_000e6);
+        assertEq(vault.assetsOf(user1),           assets);
+        assertEq(vault.totalAssets(),             assets);
+        assertEq(asset.balanceOf(address(vault)), assets);
+        assertEq(asset.balanceOf(user1),          0);
+
+        // Set deposit cap to 0
+        vm.prank(admin);
+        vault.setDepositCap(0);
+
+        // Withdraw should still succeed
+        vm.prank(user1);
+        vault.withdraw(assets, user1, user1);
+
+        assertEq(vault.totalSupply(),             0);
+        assertEq(vault.balanceOf(user1),          0);
+        assertEq(vault.assetsOf(user1),           0);
+        assertEq(vault.totalAssets(),             0);
+        assertEq(asset.balanceOf(address(vault)), 0);
+        assertEq(asset.balanceOf(user1),          assets);
+    }
+
 }
 
 contract SparkVaultRedeemFailureTests is SparkVaultTestBase {
@@ -763,6 +796,39 @@ contract SparkVaultRedeemSuccessTests is SparkVaultTestBase {
         assertEq(asset.balanceOf(address(vault)), 0);
         assertEq(asset.balanceOf(user1),          0);
         assertEq(asset.balanceOf(randomUser),     assets);
+    }
+
+    function test_redeem_depositCapExceeded() public {
+        uint256 shares = vault.balanceOf(user1);
+        uint256 assets = vault.assetsOf(user1);
+
+        assertEq(shares, 1_000_000e6);
+        assertEq(assets, 1_000_107.459782e6);
+
+        // Deal value accrued to the vault
+        deal(address(asset), address(vault), 1_000_107.459782e6);
+
+        assertEq(vault.totalSupply(),             1_000_000e6);
+        assertEq(vault.balanceOf(user1),          1_000_000e6);
+        assertEq(vault.assetsOf(user1),           assets);
+        assertEq(vault.totalAssets(),             assets);
+        assertEq(asset.balanceOf(address(vault)), assets);
+        assertEq(asset.balanceOf(user1),          0);
+
+        // Set deposit cap to 0
+        vm.prank(admin);
+        vault.setDepositCap(0);
+
+        // Redeem should still succeed
+        vm.prank(user1);
+        vault.redeem(shares, user1, user1);
+
+        assertEq(vault.totalSupply(),             0);
+        assertEq(vault.balanceOf(user1),          0);
+        assertEq(vault.assetsOf(user1),           0);
+        assertEq(vault.totalAssets(),             0);
+        assertEq(asset.balanceOf(address(vault)), 0);
+        assertEq(asset.balanceOf(user1),          assets);
     }
 
 }
