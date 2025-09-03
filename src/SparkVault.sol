@@ -351,10 +351,13 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
         uint256 remainingAssets = depositCap_ - totalAssets_;
 
         if (remainingAssets > type(uint256).max / RAY) {
-            // Overflow would happen
+            // Overflow would happen in (remainingAssets * RAY), hence we divide first instead. This
+            // will not skew the results significantly as remainingAssets is large and nowChi() is
+            // small.
             return remainingAssets / nowChi() * RAY;
         }
 
+        // Otherwise, just convert to shares.
         return remainingAssets * RAY / nowChi();
     }
 
