@@ -322,11 +322,11 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
     }
 
     function maxDeposit(address) external view returns (uint256) {
-        // We are looking for an maximum `x` such that
-        //    totalAssets() + x <= depositCap
-        // => x <= depositCap - totalAssets()
+        // We are looking for a maximum `d` such that
+        //    totalAssets() + d <= depositCap
+        // => d <= depositCap - totalAssets()
         uint256 totalAssets_ = totalAssets();
-        uint256 depositCap_ = depositCap;
+        uint256 depositCap_  = depositCap;
         return totalAssets_ >= depositCap_ ? 0 : depositCap_ - totalAssets_;
     }
 
@@ -344,8 +344,18 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
         // The largest integer will be when we take the floor of the right-hand side:
         //    m = floor((depositCap - totalAssets()) * RAY / nowChi())
         uint256 totalAssets_ = totalAssets();
-        uint256 depositCap_ = depositCap;
-        return totalAssets_ >= depositCap_ ? 0 : (depositCap_ - totalAssets_) * RAY / nowChi();
+        uint256 depositCap_  = depositCap;
+
+        if (totalAssets_ >= depositCap_) return 0;
+
+        uint256 remainingAssets = depositCap_ - totalAssets_;
+
+        if (remainingAssets > type(uint256).max / RAY) {
+            // Overflow would happen
+            return remainingAssets / nowChi() * RAY;
+        }
+
+        return remainingAssets * RAY / nowChi();
     }
 
     function maxRedeem(address owner) external view returns (uint256) {
