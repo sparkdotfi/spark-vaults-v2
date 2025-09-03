@@ -425,11 +425,11 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
 
         _pullAsset(msg.sender, assets);
 
-        // NOTE: Don't need overflow checks as balanceOf[receiver] <= totalSupply
-        //       and shares <= totalSupply
+        totalSupply = totalSupply + shares;
+
+        // NOTE: balanceOf unchecked addition is secure as balanceOf[receiver] <= totalSupply.
         unchecked {
             balanceOf[receiver] = balanceOf[receiver] + shares;
-            totalSupply = totalSupply + shares;
         }
 
         emit Deposit(msg.sender, receiver, assets, shares);
