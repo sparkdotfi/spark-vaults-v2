@@ -308,6 +308,22 @@ contract SparkVaultDepositFailureTests is SparkVaultTestBase {
         uint256 amount = 1_000_000e6;
         vm.expectRevert("SparkVault/taker-cannot-deposit");
         vault.deposit(amount, taker);
+
+    function test_deposit_revertsExceedsDepositCapBoundary() public {
+        // Deposit cap is currently 1_000_000e6 and there are no deposits
+        address user1 = makeAddr("user1");
+        deal(address(asset), user1, 1_000_000e6 + 1);
+
+        // Deposit exceeding the cap should revert
+        vm.startPrank(user1);
+        asset.approve(address(vault), 1_000_000e6 + 1);
+        vm.expectRevert("SparkVault/deposit-cap-exceeded");
+        vault.deposit(1_000_000e6 + 1, user1);
+        vm.stopPrank();
+
+        // Deposit up to the cap should succeed
+        vm.prank(user1);
+        vault.deposit(1_000_000e6, user1);
     }
 
 }
@@ -361,7 +377,7 @@ contract SparkVaultMintFailureTests is SparkVaultTestBase {
         vault.mint(shares, address(0));
     }
 
-    function test_deposit_revertsReceiverVault() public {
+    function test_mint_revertsReceiverVault() public {
         uint256 shares = 1_000_000e6;
         vm.expectRevert("SparkVault/invalid-address");
         vault.mint(shares, address(vault));
@@ -378,6 +394,22 @@ contract SparkVaultMintFailureTests is SparkVaultTestBase {
         uint256 shares = 1_000_000e6;
         vm.expectRevert("SparkVault/taker-cannot-deposit");
         vault.mint(shares, taker);
+
+    function test_mint_revertsExceedsDepositCapBoundary() public {
+        // Deposit cap is currently 1_000_000e6 and there are no deposits
+        address user1 = makeAddr("user1");
+        deal(address(asset), user1, 1_000_000e6 + 1);
+
+        // Mint exceeding the cap should revert
+        vm.startPrank(user1);
+        asset.approve(address(vault), 1_000_000e6 + 1);
+        vm.expectRevert("SparkVault/deposit-cap-exceeded");
+        vault.mint(1_000_000e6 + 1, user1);
+        vm.stopPrank();
+
+        // Mint up to the cap should succeed
+        vm.prank(user1);
+        vault.mint(1_000_000e6, user1);
     }
 
 }
@@ -734,3 +766,4 @@ contract SparkVaultRedeemSuccessTests is SparkVaultTestBase {
     }
 
 }
+
