@@ -208,6 +208,32 @@ contract SparkVaultERC4626Test is SparkVaultTestBase {
         assertEq(maxMintUser2, 1_099_774.358705e6);
     }
 
+    function test_maxMint_extremelyLargeDepositCap() public {
+        // Deposit cap is currently 2_100_000e6 and total assets is slightly above 1_000_000e6
+        vm.prank(admin);
+        vault.setDepositCap(type(uint256).max);
+
+        uint256 maxMintUser1 = vault.maxMint(user1);
+        uint256 maxMintUser2 = vault.maxMint(user2);
+
+        assertEq(maxMintUser1, type(uint256).max);
+        assertEq(maxMintUser2, type(uint256).max);
+
+        vm.prank(admin);
+        // It returns uint_max when depositCap > uint_max / RAY
+        //    1e77       < uint_max       < 1e78
+        // => 1e77 / RAY < uint_max / RAY < 1e78 / RAY
+        // => 1e50       < uint_max / RAY < 1e51
+        // So 1e51 should still trigger it (return uint_max)
+        vault.setDepositCap(1e51);
+
+        maxMintUser1 = vault.maxMint(user1);
+        maxMintUser2 = vault.maxMint(user2);
+
+        assertEq(maxMintUser1, type(uint256).max);
+        assertEq(maxMintUser2, type(uint256).max);
+    }
+
     function test_maxRedeem_liquidityLessThanAmount() public {
         // Deal value accrued to the vault
         deal(address(asset), address(vault), totalAssets);
