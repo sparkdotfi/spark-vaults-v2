@@ -3,7 +3,8 @@ pragma solidity ^0.8.25;
 
 import { ERC1967Utils } from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Utils.sol";
 import { SafeERC20 }    from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
-import { IERC20 }       from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+
+import { IERC20Metadata as IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 import { AccessControlEnumerableUpgradeable }
     from "openzeppelin-contracts-upgradeable/contracts/access/extensions/AccessControlEnumerableUpgradeable.sol";
@@ -321,44 +322,12 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
         return assets * RAY / nowChi();
     }
 
-    function maxDeposit(address) external view returns (uint256) {
-        // We are looking for a maximum `d` such that
-        //    totalAssets() + d <= depositCap
-        // => d <= depositCap - totalAssets()
-        uint256 totalAssets_ = totalAssets();
-        uint256 depositCap_  = depositCap;
-        return depositCap_ <= totalAssets_ ? 0 : depositCap_ - totalAssets_;
+    function maxDeposit(address) public view returns (uint256) {
+        return _normalizedAvailableDeposit() * 10 ** IERC20(asset).decimals();
     }
 
     function maxMint(address) external view returns (uint256) {
-        // If we pass in a mint amount `m`, the assets that get pulled from the user is ceiling(m *
-        // nowChi() / RAY). (`mint` rounds up for user's assets.) Hence we are looking for a maximum
-        // `m` such that:
-        //    totalAssets() + ceiling(m * nowChi() / RAY) <= depositCap
-        // => ceiling(m * nowChi() / RAY) <= depositCap - totalAssets()
-        // For any real `x` and integral `k`:
-        //    ceiling(x) <= k  <=>  x <= k,
-        // hence:
-        //    m * nowChi() / RAY <= depositCap - totalAssets()
-        // => m <= (depositCap - totalAssets()) * RAY / nowChi()
-        // The largest integer will be when we take the floor of the right-hand side:
-        //    m = floor((depositCap - totalAssets()) * RAY / nowChi())
-        uint256 totalAssets_ = totalAssets();
-        uint256 depositCap_  = depositCap;
-
-        if (depositCap_ <= totalAssets_) return 0;
-
-        uint256 remainingAssets = depositCap_ - totalAssets_;
-
-        if (remainingAssets > type(uint256).max / RAY) {
-            // Overflow would happen in (remainingAssets * RAY), hence we divide first instead. This
-            // will not skew the results significantly as remainingAssets is large and nowChi() is
-            // small.
-            return remainingAssets / nowChi() * RAY;
-        }
-
-        // Otherwise, just convert to shares.
-        return remainingAssets * RAY / nowChi();
+        return _normalizedAvailableDeposit() * RAY / nowChi();
     }
 
     function maxRedeem(address owner) external view returns (uint256) {
@@ -466,7 +435,7 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
             "SparkVault/taker-cannot-deposit"
         );
 
-        require(totalAssets() + assets <= depositCap, "SparkVault/deposit-cap-exceeded");
+        require(assets <= maxDeposit(msg.sender), "SparkVault/deposit-cap-exceeded");
 
         _pullAsset(msg.sender, assets);
 
@@ -545,6 +514,10 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
     /**********************************************************************************************/
     /*** General internal helper functions                                                      ***/
     /**********************************************************************************************/
+
+    function _normalizedAvailableDeposit() internal view returns (uint256) {
+        return depositCap - totalAssets() / 10 ** IERC20(asset).decimals();
+    }
 
     function _divup(uint256 x, uint256 y) internal pure returns (uint256 z) {
         // NOTE: _divup(0,0) will return 0 differing from natural solidity division
