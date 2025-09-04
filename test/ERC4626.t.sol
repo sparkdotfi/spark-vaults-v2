@@ -169,13 +169,25 @@ contract SparkVaultERC4626Test is SparkVaultTestBase {
     function test_maxDeposit_depositCapLeTotalAssets() public {
         // Deposit cap is currently 2_100_000e6 and total assets is slightly above 1_000_000e6
         vm.prank(admin);
-        vault.setDepositCap(1_000_000e6);
-
+        vault.setDepositCap(1_000_107.459782e6 - 1);
         uint256 maxDepositUser1 = vault.maxDeposit(user1);
         uint256 maxDepositUser2 = vault.maxDeposit(user2);
-
         assertEq(maxDepositUser1, 0);
-        assertEq(maxDepositUser2, 0);
+        assertEq(maxDepositUser2, maxDepositUser1);
+
+        vm.prank(admin);
+        vault.setDepositCap(1_000_107.459782e6);
+        maxDepositUser1 = vault.maxDeposit(user1);
+        maxDepositUser2 = vault.maxDeposit(user2);
+        assertEq(maxDepositUser1, 0);
+        assertEq(maxDepositUser2, maxDepositUser1);
+
+        vm.prank(admin);
+        vault.setDepositCap(1_000_107.459782e6 + 1);
+        maxDepositUser1 = vault.maxDeposit(user1);
+        maxDepositUser2 = vault.maxDeposit(user2);
+        assertEq(maxDepositUser1, 1);
+        assertEq(maxDepositUser2, maxDepositUser1);
     }
 
     function test_maxDeposit_depositCapGtTotalAssets() public {
@@ -184,19 +196,45 @@ contract SparkVaultERC4626Test is SparkVaultTestBase {
         uint256 maxDepositUser2 = vault.maxDeposit(user2);
 
         assertEq(maxDepositUser1, 1_099_892.540218e6);
-        assertEq(maxDepositUser2, 1_099_892.540218e6);
+        assertEq(maxDepositUser2, maxDepositUser1);
+
+        assertEq(maxDepositUser1, vault.depositCap() - vault.totalAssets());
     }
 
     function test_maxMint_depositCapLeTotalAssets() public {
         // Deposit cap is currently 2_100_000e6 and total assets is slightly above 1_000_000e6
-        vm.prank(admin);
-        vault.setDepositCap(1_000_000e6);
+        assertEq(vault.totalAssets(), 1_000_107.459782e6);
 
+        vm.prank(admin);
+        vault.setDepositCap(1_000_107.459782e6 - 1);
         uint256 maxMintUser1 = vault.maxMint(user1);
         uint256 maxMintUser2 = vault.maxMint(user2);
-
         assertEq(maxMintUser1, 0);
-        assertEq(maxMintUser2, 0);
+        assertEq(maxMintUser2, maxMintUser1);
+
+        vm.prank(admin);
+        vault.setDepositCap(1_000_107.459782e6);
+        maxMintUser1 = vault.maxMint(user1);
+        maxMintUser2 = vault.maxMint(user2);
+        assertEq(maxMintUser1, 0);
+        assertEq(maxMintUser2, maxMintUser1);
+
+        vm.prank(admin);
+        vault.setDepositCap(1_000_107.459782e6 + 1);
+        maxMintUser1 = vault.maxMint(user1);
+        maxMintUser2 = vault.maxMint(user2);
+        // Since shares are worth more than assets at this point, increasing depositCap (assets) by
+        // just 1 doesn't mean that shares jumps up immediately
+        assertEq(maxMintUser1, 0);
+        assertEq(maxMintUser2, maxMintUser1);
+
+        vm.prank(admin);
+        vault.setDepositCap(1_000_107.459782e6 + 2);
+        maxMintUser1 = vault.maxMint(user1);
+        maxMintUser2 = vault.maxMint(user2);
+        // After increasing depositCap (assets) by 2, shares starts to reflect that
+        assertEq(maxMintUser1, 1);
+        assertEq(maxMintUser2, maxMintUser1);
     }
 
     function test_maxMint_depositCapGtTotalAssets() public {
@@ -212,12 +250,10 @@ contract SparkVaultERC4626Test is SparkVaultTestBase {
         // Deposit cap is currently 2_100_000e6 and total assets is slightly above 1_000_000e6
         vm.prank(admin);
         vault.setDepositCap(type(uint256).max);
-
         uint256 maxMintUser1 = vault.maxMint(user1);
         uint256 maxMintUser2 = vault.maxMint(user2);
-
         assertEq(maxMintUser1, type(uint256).max);
-        assertEq(maxMintUser2, type(uint256).max);
+        assertEq(maxMintUser2, maxMintUser1);
 
         vm.prank(admin);
         // It returns uint_max when depositCap > uint_max / RAY
@@ -226,12 +262,18 @@ contract SparkVaultERC4626Test is SparkVaultTestBase {
         // => 1e50       < uint_max / RAY < 1e51
         // So 1e51 should still trigger it (return uint_max)
         vault.setDepositCap(1e51);
-
         maxMintUser1 = vault.maxMint(user1);
         maxMintUser2 = vault.maxMint(user2);
-
         assertEq(maxMintUser1, type(uint256).max);
-        assertEq(maxMintUser2, type(uint256).max);
+        assertEq(maxMintUser2, maxMintUser1);
+
+        vm.prank(admin);
+        // But 1e50 should not
+        vault.setDepositCap(1e50);
+        maxMintUser1 = vault.maxMint(user1);
+        maxMintUser2 = vault.maxMint(user2);
+        assertLt(maxMintUser1, type(uint256).max);
+        assertEq(maxMintUser2, maxMintUser1);
     }
 
     function test_maxRedeem_liquidityLessThanAmount() public {
