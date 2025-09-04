@@ -322,43 +322,21 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
     }
 
     function maxDeposit(address) external view returns (uint256) {
-        // We are looking for a maximum `d` such that
-        //    totalAssets() + d <= depositCap
-        // => d <= depositCap - totalAssets()
         uint256 totalAssets_ = totalAssets();
         uint256 depositCap_  = depositCap;
         return depositCap_ <= totalAssets_ ? 0 : depositCap_ - totalAssets_;
     }
 
     function maxMint(address) external view returns (uint256) {
-        // If we pass in a mint amount `m`, the assets that get pulled from the user is ceiling(m *
-        // nowChi() / RAY). (`mint` rounds up for user's assets.) Hence we are looking for a maximum
-        // `m` such that:
-        //    totalAssets() + ceiling(m * nowChi() / RAY) <= depositCap
-        // => ceiling(m * nowChi() / RAY) <= depositCap - totalAssets()
-        // For any real `x` and integral `k`:
-        //    ceiling(x) <= k  <=>  x <= k,
-        // hence:
-        //    m * nowChi() / RAY <= depositCap - totalAssets()
-        // => m <= (depositCap - totalAssets()) * RAY / nowChi()
-        // The largest integer will be when we take the floor of the right-hand side:
-        //    m = floor((depositCap - totalAssets()) * RAY / nowChi())
+        uint256 depositCap_ = depositCap;
+
+        // NOTE: Prevents overflow on (depositCap_ - totalAssets_) * RAY below, values above
+        //       type(uint256).max / RAY are considered "infinite".
+        if (depositCap_ > type(uint256).max / RAY) return type(uint256).max;
+
         uint256 totalAssets_ = totalAssets();
-        uint256 depositCap_  = depositCap;
 
-        if (depositCap_ <= totalAssets_) return 0;
-
-        uint256 remainingAssets = depositCap_ - totalAssets_;
-
-        if (remainingAssets > type(uint256).max / RAY) {
-            // Overflow would happen in (remainingAssets * RAY), hence we divide first instead. This
-            // will not skew the results significantly as remainingAssets is large and nowChi() is
-            // small.
-            return remainingAssets / nowChi() * RAY;
-        }
-
-        // Otherwise, just convert to shares.
-        return remainingAssets * RAY / nowChi();
+        return depositCap_ <= totalAssets_ ? 0 : (depositCap_ - totalAssets_) * RAY / nowChi();
     }
 
     function maxRedeem(address owner) external view returns (uint256) {
