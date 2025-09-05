@@ -164,7 +164,6 @@ contract SparkVaultERC4626Test is SparkVaultTestBase {
 
     function test_maxDeposit_depositCapLeTotalAssets() public {
         // Deposit cap is currently 2_100_000e6 and total assets is slightly above 1_000_000e6
-        uint256 totalAssets = vault.totalAssets();
         vm.prank(admin);
         vault.setDepositCap(totalAssets - 1);
 
@@ -224,7 +223,7 @@ contract SparkVaultERC4626Test is SparkVaultTestBase {
         assertEq(vault.maxMint(user2), 1);
     }
 
-    function test_maxMint_depositCapGtTotalAssets() public {
+    function test_maxMint_depositCapGtTotalAssets() public view {
         // Deposit cap is currently 2_100_000e6 and total assets is slightly above 1_000_000e6
         uint256 expMaxMint = (vault.depositCap() - vault.totalAssets()) * 1e27 / vault.nowChi();
 
