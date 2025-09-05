@@ -732,8 +732,7 @@ contract SparkVaultWithdrawSuccessTests is SparkVaultTestBase {
         assertEq(vault.assetsOf(user1),           0);
         assertEq(vault.totalAssets(),             0);
         assertEq(asset.balanceOf(address(vault)), 0);
-        // We dealt 1 to user1 above
-        assertEq(asset.balanceOf(user1),          assets + 1);
+        assertEq(asset.balanceOf(user1),          assets + 1);  // We dealt 1 to user1 above
     }
 
 }
@@ -936,8 +935,7 @@ contract SparkVaultRedeemSuccessTests is SparkVaultTestBase {
         assertEq(vault.assetsOf(user1),           0);
         assertEq(vault.totalAssets(),             0);
         assertEq(asset.balanceOf(address(vault)), 0);
-        // We dealt 2 assets to user1 above
-        assertEq(asset.balanceOf(user1),          assets + assetAmount);
+        assertEq(asset.balanceOf(user1),          assets + assetAmount);  // We dealt 2 assets to user1 above
     }
 
 }
