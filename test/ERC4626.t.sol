@@ -1,11 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity ^0.8.25;
 
-import { ERC4626Test, IMockERC20 } from "erc4626-tests/ERC4626.test.sol";
-
-import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-
-import { SparkVault } from "src/SparkVault.sol";
+import { ERC4626Test } from "erc4626-tests/ERC4626.test.sol";
 
 import { SparkVaultTestBase } from "./TestBase.t.sol";
 
@@ -168,92 +164,81 @@ contract SparkVaultERC4626Test is SparkVaultTestBase {
 
     function test_maxDeposit_depositCapLeTotalAssets() public {
         // Deposit cap is currently 2_100_000e6 and total assets is slightly above 1_000_000e6
+        uint256 totalAssets = vault.totalAssets();
         vm.prank(admin);
-        vault.setDepositCap(1_000_107.459782e6 - 1);
-        uint256 maxDepositUser1 = vault.maxDeposit(user1);
-        uint256 maxDepositUser2 = vault.maxDeposit(user2);
-        assertEq(maxDepositUser1, 0);
-        assertEq(maxDepositUser2, maxDepositUser1);
+        vault.setDepositCap(totalAssets - 1);
+
+        assertEq(vault.maxDeposit(user1), 0);
+        assertEq(vault.maxDeposit(user2), 0);
 
         vm.prank(admin);
-        vault.setDepositCap(1_000_107.459782e6);
-        maxDepositUser1 = vault.maxDeposit(user1);
-        maxDepositUser2 = vault.maxDeposit(user2);
-        assertEq(maxDepositUser1, 0);
-        assertEq(maxDepositUser2, maxDepositUser1);
+        vault.setDepositCap(totalAssets);
+
+        assertEq(vault.maxDeposit(user1), 0);
+        assertEq(vault.maxDeposit(user2), 0);
 
         vm.prank(admin);
-        vault.setDepositCap(1_000_107.459782e6 + 1);
-        maxDepositUser1 = vault.maxDeposit(user1);
-        maxDepositUser2 = vault.maxDeposit(user2);
-        assertEq(maxDepositUser1, 1);
-        assertEq(maxDepositUser2, maxDepositUser1);
+        vault.setDepositCap(totalAssets + 1);
+
+        assertEq(vault.maxDeposit(user1), 1);
+        assertEq(vault.maxDeposit(user2), 1);
     }
 
-    function test_maxDeposit_depositCapGtTotalAssets() public {
+    function test_maxDeposit_depositCapGtTotalAssets() public view {
         // Deposit cap is currently 2_100_000e6 and total assets is slightly above 1_000_000e6
-        uint256 maxDepositUser1 = vault.maxDeposit(user1);
-        uint256 maxDepositUser2 = vault.maxDeposit(user2);
+        uint256 expMaxDeposit = vault.depositCap() - vault.totalAssets();
 
-        assertEq(maxDepositUser1, 1_099_892.540218e6);
-        assertEq(maxDepositUser2, maxDepositUser1);
-
-        assertEq(maxDepositUser1, vault.depositCap() - vault.totalAssets());
+        assertEq(vault.maxDeposit(user1), expMaxDeposit);
+        assertEq(vault.maxDeposit(user2), expMaxDeposit);
     }
 
     function test_maxMint_depositCapLeTotalAssets() public {
         // Deposit cap is currently 2_100_000e6 and total assets is slightly above 1_000_000e6
-        assertEq(vault.totalAssets(), 1_000_107.459782e6);
+        uint256 totalAssets = vault.totalAssets();
 
         vm.prank(admin);
-        vault.setDepositCap(1_000_107.459782e6 - 1);
-        uint256 maxMintUser1 = vault.maxMint(user1);
-        uint256 maxMintUser2 = vault.maxMint(user2);
-        assertEq(maxMintUser1, 0);
-        assertEq(maxMintUser2, maxMintUser1);
+        vault.setDepositCap(totalAssets - 1);
+
+        assertEq(vault.maxMint(user1), 0);
+        assertEq(vault.maxMint(user2), 0);
 
         vm.prank(admin);
-        vault.setDepositCap(1_000_107.459782e6);
-        maxMintUser1 = vault.maxMint(user1);
-        maxMintUser2 = vault.maxMint(user2);
-        assertEq(maxMintUser1, 0);
-        assertEq(maxMintUser2, maxMintUser1);
+        vault.setDepositCap(totalAssets);
+
+        assertEq(vault.maxMint(user1), 0);
+        assertEq(vault.maxMint(user2), 0);
 
         vm.prank(admin);
-        vault.setDepositCap(1_000_107.459782e6 + 1);
-        maxMintUser1 = vault.maxMint(user1);
-        maxMintUser2 = vault.maxMint(user2);
+        vault.setDepositCap(totalAssets + 1);
+
         // Since shares are worth more than assets at this point, increasing depositCap (assets) by
         // just 1 doesn't mean that shares jumps up immediately
-        assertEq(maxMintUser1, 0);
-        assertEq(maxMintUser2, maxMintUser1);
+        assertEq(vault.maxMint(user1), 0);
+        assertEq(vault.maxMint(user2), 0);
 
         vm.prank(admin);
-        vault.setDepositCap(1_000_107.459782e6 + 2);
-        maxMintUser1 = vault.maxMint(user1);
-        maxMintUser2 = vault.maxMint(user2);
+        vault.setDepositCap(totalAssets + 2);
+
         // After increasing depositCap (assets) by 2, shares starts to reflect that
-        assertEq(maxMintUser1, 1);
-        assertEq(maxMintUser2, maxMintUser1);
+        assertEq(vault.maxMint(user1), 1);
+        assertEq(vault.maxMint(user2), 1);
     }
 
     function test_maxMint_depositCapGtTotalAssets() public {
         // Deposit cap is currently 2_100_000e6 and total assets is slightly above 1_000_000e6
-        uint256 maxMintUser1 = vault.maxMint(user1);
-        uint256 maxMintUser2 = vault.maxMint(user2);
+        uint256 expMaxMint = (vault.depositCap() - vault.totalAssets()) * 1e27 / vault.nowChi();
 
-        assertEq(maxMintUser1, 1_099_774.358705e6);
-        assertEq(maxMintUser2, 1_099_774.358705e6);
+        assertEq(vault.maxMint(user1), expMaxMint);
+        assertEq(vault.maxMint(user2), expMaxMint);
     }
 
     function test_maxMint_extremelyLargeDepositCap() public {
         // Deposit cap is currently 2_100_000e6 and total assets is slightly above 1_000_000e6
         vm.prank(admin);
         vault.setDepositCap(type(uint256).max);
-        uint256 maxMintUser1 = vault.maxMint(user1);
-        uint256 maxMintUser2 = vault.maxMint(user2);
-        assertEq(maxMintUser1, type(uint256).max);
-        assertEq(maxMintUser2, maxMintUser1);
+
+        assertEq(vault.maxMint(user1), type(uint256).max);
+        assertEq(vault.maxMint(user2), type(uint256).max);
 
         vm.prank(admin);
         // It returns uint_max when depositCap > uint_max / RAY
@@ -262,18 +247,16 @@ contract SparkVaultERC4626Test is SparkVaultTestBase {
         // => 1e50       < uint_max / RAY < 1e51
         // So 1e51 should still trigger it (return uint_max)
         vault.setDepositCap(1e51);
-        maxMintUser1 = vault.maxMint(user1);
-        maxMintUser2 = vault.maxMint(user2);
-        assertEq(maxMintUser1, type(uint256).max);
-        assertEq(maxMintUser2, maxMintUser1);
+
+        assertEq(vault.maxMint(user1), type(uint256).max);
+        assertEq(vault.maxMint(user2), type(uint256).max);
 
         vm.prank(admin);
         // But 1e50 should not
         vault.setDepositCap(1e50);
-        maxMintUser1 = vault.maxMint(user1);
-        maxMintUser2 = vault.maxMint(user2);
-        assertLt(maxMintUser1, type(uint256).max);
-        assertEq(maxMintUser2, maxMintUser1);
+
+        assertLt(vault.maxMint(user1), type(uint256).max);
+        assertLt(vault.maxMint(user2), type(uint256).max);
     }
 
     function test_maxRedeem_liquidityLessThanAmount() public {
@@ -717,7 +700,7 @@ contract SparkVaultWithdrawSuccessTests is SparkVaultTestBase {
         assertEq(asset.balanceOf(randomUser),     assets);
     }
 
-    function test_withdraw_depositCapExceeded() public {
+    function test_withdraw_succeedsWithDepositCapZero() public {
         uint256 assets = vault.assetsOf(user1);
 
         assertEq(assets, 1_000_107.459782e6);
@@ -736,6 +719,13 @@ contract SparkVaultWithdrawSuccessTests is SparkVaultTestBase {
         vm.prank(admin);
         vault.setDepositCap(0);
 
+        // Deposit should now revert
+        deal(address(asset), user1, 1);
+        vm.prank(user1);
+        asset.approve(address(vault), 1);
+        vm.expectRevert("SparkVault/deposit-cap-exceeded");
+        vault.deposit(1, user1);
+
         // Withdraw should still succeed
         vm.prank(user1);
         vault.withdraw(assets, user1, user1);
@@ -745,7 +735,8 @@ contract SparkVaultWithdrawSuccessTests is SparkVaultTestBase {
         assertEq(vault.assetsOf(user1),           0);
         assertEq(vault.totalAssets(),             0);
         assertEq(asset.balanceOf(address(vault)), 0);
-        assertEq(asset.balanceOf(user1),          assets);
+        // We dealt 1 to user1 above
+        assertEq(asset.balanceOf(user1),          assets + 1);
     }
 
 }
@@ -908,7 +899,7 @@ contract SparkVaultRedeemSuccessTests is SparkVaultTestBase {
         assertEq(asset.balanceOf(randomUser),     assets);
     }
 
-    function test_redeem_depositCapExceeded() public {
+    function test_redeem_succeedsWithDepositCapZero() public {
         uint256 shares = vault.balanceOf(user1);
         uint256 assets = vault.assetsOf(user1);
 
@@ -929,6 +920,16 @@ contract SparkVaultRedeemSuccessTests is SparkVaultTestBase {
         vm.prank(admin);
         vault.setDepositCap(0);
 
+        // Mint should now revert
+        uint256 assetAmount = vault.previewMint(1);
+        // Just to show that assetAmount is 2
+        assertEq(assetAmount, 2);
+        deal(address(asset), user1, assetAmount);
+        vm.prank(user1);
+        asset.approve(address(vault), assetAmount);
+        vm.expectRevert("SparkVault/deposit-cap-exceeded");
+        vault.mint(1, user1);
+
         // Redeem should still succeed
         vm.prank(user1);
         vault.redeem(shares, user1, user1);
@@ -938,7 +939,8 @@ contract SparkVaultRedeemSuccessTests is SparkVaultTestBase {
         assertEq(vault.assetsOf(user1),           0);
         assertEq(vault.totalAssets(),             0);
         assertEq(asset.balanceOf(address(vault)), 0);
-        assertEq(asset.balanceOf(user1),          assets);
+        // We dealt 2 assets to user1 above
+        assertEq(asset.balanceOf(user1),          assets + assetAmount);
     }
 
 }
