@@ -29,6 +29,7 @@ contract ValueAccrualE2ETest is SparkVaultTestBase {
 
         vm.startPrank(admin);
         vault.setVsrBounds(ONE_PCT_VSR, FOUR_PCT_VSR);
+        vault.setDepositCap(2_100_000e6);
         vm.stopPrank();
     }
 

@@ -67,6 +67,7 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
     uint256 public minVsr; // The minimum Vault Savings Rate [ray]
     uint256 public maxVsr; // The maximum Vault Savings Rate [ray]
 
+    uint256 public depositCap;
     uint256 public totalSupply;
 
     mapping (address => uint256) public balanceOf;
@@ -107,6 +108,11 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
     /**********************************************************************************************/
     /*** Role-based external functions                                                          ***/
     /**********************************************************************************************/
+
+    function setDepositCap(uint256 newCap) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        emit DepositCapSet(depositCap, newCap);
+        depositCap = newCap;
+    }
 
     function setVsrBounds(uint256 minVsr_, uint256 maxVsr_) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(minVsr_ >= RAY,     "SparkVault/vsr-too-low");
@@ -315,12 +321,22 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
         return assets * RAY / nowChi();
     }
 
-    function maxDeposit(address) external pure returns (uint256) {
-        return type(uint256).max;
+    function maxDeposit(address) external view returns (uint256) {
+        uint256 totalAssets_ = totalAssets();
+        uint256 depositCap_  = depositCap;
+        return depositCap_ <= totalAssets_ ? 0 : depositCap_ - totalAssets_;
     }
 
-    function maxMint(address) external pure returns (uint256) {
-        return type(uint256).max;
+    function maxMint(address) external view returns (uint256) {
+        uint256 depositCap_ = depositCap;
+
+        // NOTE: Prevents overflow on (depositCap_ - totalAssets_) * RAY below, values above
+        //       type(uint256).max / RAY are considered "infinite".
+        if (depositCap_ > type(uint256).max / RAY) return type(uint256).max;
+
+        uint256 totalAssets_ = totalAssets();
+
+        return depositCap_ <= totalAssets_ ? 0 : (depositCap_ - totalAssets_) * RAY / nowChi();
     }
 
     function maxRedeem(address owner) external view returns (uint256) {
@@ -427,6 +443,8 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
             !hasRole(TAKER_ROLE, msg.sender) && !hasRole(TAKER_ROLE, receiver),
             "SparkVault/taker-cannot-deposit"
         );
+
+        require(totalAssets() + assets <= depositCap, "SparkVault/deposit-cap-exceeded");
 
         _pullAsset(msg.sender, assets);
 
