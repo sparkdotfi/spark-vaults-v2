@@ -12,6 +12,8 @@ import { UUPSUpgradeable } from "openzeppelin-contracts-upgradeable/contracts/pr
 
 import { ISparkVault } from "./ISparkVault.sol";
 
+import { console2 } from "forge-std/console2.sol";
+
 interface IERC1271 {
     function isValidSignature(bytes32, bytes memory) external view returns (bytes4);
 }
@@ -80,6 +82,7 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
     /**********************************************************************************************/
 
     constructor() {
+        console2.log("SparkVault constructor:", address(this), block.number, block.timestamp);
         _disableInitializers(); // Avoid initializing in the context of the implementation
     }
 
