@@ -25,7 +25,9 @@ contract DeploySparkVault is Script {
         vm.setEnv("FOUNDRY_ROOT_CHAINID",             "1");
         vm.setEnv("FOUNDRY_EXPORTS_OVERWRITE_LATEST", "true");
 
-        vm.createSelectFork(getChain("mainnet").rpcUrl);
+        // TODO: Figure out why this doesn't work. Until then, --rpc-url must be passed to `forge
+        // script` manually
+        // vm.createSelectFork(getChain("mainnet").rpcUrl);
 
         string memory config = ScriptTools.loadConfig("input");
 
@@ -36,20 +38,37 @@ contract DeploySparkVault is Script {
         // initializers are disabled (`constructor() { _disableInitializers(); }`). It is not
         // possible for an outside party to interact with this contract in any way.
         address impl = address(new SparkVault());
-        console2.log("SparkVault implementation:", impl, block.number, block.timestamp);
+        console2.log("Deployed SparkVault implementation:", impl, block.number, block.timestamp);
 
         // Deploy SparkVault proxy for asset0
-        console2.log("DeploySparkVault", impl.code.length);
         address proxy_asset0 = address(new ERC1967Proxy(
             impl,
-            ""
-            // abi.encodeCall(
-            //     SparkVault.initialize,
-            //     (config.readAddress(".asset0"), config.readString(".name0"), config.readString(".symbol0"), Ethereum.SPARK_PROXY)
-            // )
+            abi.encodeCall(
+                SparkVault.initialize,
+                (config.readAddress(".asset0"), config.readString(".name0"), config.readString(".symbol0"), Ethereum.SPARK_PROXY)
+            )
         ));
-        // Deploy SparkVault proxy for USDT
-        // Deploy SparkVault proxy for WETH
+        console2.log("Deployed SparkVault proxy (asset0):", proxy_asset0, block.number, block.timestamp);
+
+        // Deploy SparkVault proxy for asset1
+        address proxy_asset1 = address(new ERC1967Proxy(
+            impl,
+            abi.encodeCall(
+                SparkVault.initialize,
+                (config.readAddress(".asset1"), config.readString(".name1"), config.readString(".symbol1"), Ethereum.SPARK_PROXY)
+            )
+        ));
+        console2.log("Deployed SparkVault proxy (asset1):", proxy_asset1, block.number, block.timestamp);
+
+        // Deploy SparkVault proxy for asset2
+        address proxy_asset2 = address(new ERC1967Proxy(
+            impl,
+            abi.encodeCall(
+                SparkVault.initialize,
+                (config.readAddress(".asset2"), config.readString(".name2"), config.readString(".symbol2"), Ethereum.SPARK_PROXY)
+            )
+        ));
+        console2.log("Deployed SparkVault proxy (asset2):", proxy_asset2, block.number, block.timestamp);
 
         vm.stopBroadcast();
     }
