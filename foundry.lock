@@ -1,0 +1,20 @@
+{
+  "lib/dss-test": {
+    "rev": "61cf29fc0cf0c177a3b4072b433c43a7326ccd7b"
+  },
+  "lib/forge-std": {
+    "rev": "e4aef94c1768803a16fe19f7ce8b65defd027cfd"
+  },
+  "lib/openzeppelin-contracts": {
+    "rev": "c64a1edb67b6e3f4a15cca8909c9482ad33a02b0"
+  },
+  "lib/openzeppelin-contracts-upgradeable": {
+    "rev": "e725abddf1e01cf05ace496e950fc8e243cc7cab"
+  },
+  "lib/spark-address-registry": {
+    "rev": "d3247083428eb9f7ebe797fd47758463401d1c26"
+  },
+  "lib/token-tests": {
+    "rev": "6bdd5a38586970acf27166c3205093fd3450d530"
+  }
+}

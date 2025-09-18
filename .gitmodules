@@ -10,3 +10,9 @@
 [submodule "lib/token-tests"]
 	path = lib/token-tests
 	url = https://github.com/makerdao/token-tests
+[submodule "lib/dss-test"]
+	path = lib/dss-test
+	url = https://github.com/makerdao/dss-test
+[submodule "lib/spark-address-registry"]
+	path = lib/spark-address-registry
+	url = https://github.com/sparkdotfi/spark-address-registry
