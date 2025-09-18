@@ -14,7 +14,7 @@ import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy
 
 import { SparkVault } from "src/SparkVault.sol";
 
-contract DeploySparkVault is Script {
+contract DeploySparkVaultImpl is Script {
 
     bytes32 DEFAULT_ADMIN_ROLE = 0x00;
 
@@ -29,48 +29,65 @@ contract DeploySparkVault is Script {
         // script` manually
         // vm.createSelectFork(getChain("mainnet").rpcUrl);
 
-        string memory config = ScriptTools.loadConfig("input");
-
-        vm.startBroadcast();
-
         // Deploy SparkVault implementation
+        vm.startBroadcast();
         // NOTE: By itself, the Vault has nobody in a privileged role, depositCap and vsr are 0 and
         // initializers are disabled (`constructor() { _disableInitializers(); }`). It is not
         // possible for an outside party to interact with this contract in any way.
         address impl = address(new SparkVault());
-        console2.log("Deployed SparkVault implementation:", impl, block.number, block.timestamp);
-
-        // Deploy SparkVault proxy for asset0
-        address proxy_asset0 = address(new ERC1967Proxy(
-            impl,
-            abi.encodeCall(
-                SparkVault.initialize,
-                (config.readAddress(".asset0"), config.readString(".name0"), config.readString(".symbol0"), Ethereum.SPARK_PROXY)
-            )
-        ));
-        console2.log("Deployed SparkVault proxy (asset0):", proxy_asset0, block.number, block.timestamp);
-
-        // Deploy SparkVault proxy for asset1
-        address proxy_asset1 = address(new ERC1967Proxy(
-            impl,
-            abi.encodeCall(
-                SparkVault.initialize,
-                (config.readAddress(".asset1"), config.readString(".name1"), config.readString(".symbol1"), Ethereum.SPARK_PROXY)
-            )
-        ));
-        console2.log("Deployed SparkVault proxy (asset1):", proxy_asset1, block.number, block.timestamp);
-
-        // Deploy SparkVault proxy for asset2
-        address proxy_asset2 = address(new ERC1967Proxy(
-            impl,
-            abi.encodeCall(
-                SparkVault.initialize,
-                (config.readAddress(".asset2"), config.readString(".name2"), config.readString(".symbol2"), Ethereum.SPARK_PROXY)
-            )
-        ));
-        console2.log("Deployed SparkVault proxy (asset2):", proxy_asset2, block.number, block.timestamp);
-
         vm.stopBroadcast();
+
+        console2.log("Deployed SparkVault implementation:")
+        console2.log("  impl: ",            impl);
+        console2.log("  block.chainId: ",   block.chainid);
+        console2.log("  block.timestamp: ", block.timestamp);
+        console2.log("  block.number ",     block.number);
     }
 
+}
+
+contract DeploySparkVaultProxy {
+    address impl  = vm.envAddress("SPARK_VAULT_IMPL");
+    address admin = Ethereum.SPARK_PROXY;
+
+    function run() public {
+        vm.setEnv("FOUNDRY_ROOT_CHAINID",             "1");
+        vm.setEnv("FOUNDRY_EXPORTS_OVERWRITE_LATEST", "true");
+
+        // Read config
+        string memory chainName  = vm.envString("SPARK_VAULT_CHAIN_NAME");
+        string memory assetName = vm.envString("SPARK_VAULT_ASSET_NAME");
+        string memory fileSlug = string(abi.encodePacked(
+            chainName,
+            "-",
+            assetName
+        ));
+        string memory inputConfig = ScriptTools.readInput(fileSlug);
+
+        address asset         = inputConfig.readAddress(".asset");
+        string  memory name   = inputConfig.readString(".name");
+        string  memory symbol = inputConfig.readString(".symbol");
+
+        // Depoy SparkVault proxy
+        vm.startBroadcast();
+        address proxy = address(new ERC1967Proxy(
+            impl,
+            abi.encodeCall(
+                SparkVault.initialize,
+                (asset, name, symbol, admin)
+            )
+        ));
+        vm.stopBroadcast();
+
+        // Log
+        console2.log("Deployed SparkVault proxy:");
+        console2.log("  proxy: ",     proxy);
+        console2.log("  impl:  ",     impl);
+        console2.log("  chainName: ", chainName);
+        console2.log("  assetName: ", assetName);
+        console2.log("  asset: ",     asset);
+        console2.log("  name:  ",     name);
+        console2.log("  symbol:",     symbol);
+
+    }
 }
