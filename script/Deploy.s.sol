@@ -81,11 +81,11 @@ contract DeploySparkVaultProxy is Script {
         // Check
         require(proxy.asset() == asset, "asset");
 
-        require(keccak256(bytes(proxy.name()))   == keccak256(bytes(name)), "name");
+        require(keccak256(bytes(proxy.name()))   == keccak256(bytes(name)),   "name");
         require(keccak256(bytes(proxy.symbol())) == keccak256(bytes(symbol)), "symbol");
 
         require(proxy.getRoleMemberCount(proxy.DEFAULT_ADMIN_ROLE()) == 1, "admin count");
-        require(proxy.hasRole(proxy.DEFAULT_ADMIN_ROLE(), admin), "admin role");
+        require(proxy.hasRole(proxy.DEFAULT_ADMIN_ROLE(), admin),          "admin role");
 
         require(proxy.getRoleMemberCount(proxy.SETTER_ROLE()) == 0, "setter count");
         require(proxy.getRoleMemberCount(proxy.TAKER_ROLE())  == 0, "taker count");
