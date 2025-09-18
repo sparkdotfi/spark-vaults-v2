@@ -90,13 +90,12 @@ contract DeploySparkVaultProxy is Script {
         require(proxy.getRoleMemberCount(proxy.SETTER_ROLE()) == 0, "setter count");
         require(proxy.getRoleMemberCount(proxy.TAKER_ROLE())  == 0, "taker count");
 
-        require(proxy.chi()        == 1e27, "chi");
+        require(proxy.chi()        == 1e27,            "chi");
         require(proxy.rho()        == block.timestamp, "rho");
-        require(proxy.vsr()        == 1e27, "vsr");
-        require(proxy.minVsr()     == 1e27, "minVsr");
-        require(proxy.maxVsr()     == 1e27, "maxVsr");
-        require(proxy.depositCap() == 0, "depositCap");
-
+        require(proxy.vsr()        == 1e27,            "vsr");
+        require(proxy.minVsr()     == 1e27,            "minVsr");
+        require(proxy.maxVsr()     == 1e27,            "maxVsr");
+        require(proxy.depositCap() == 0,               "depositCap");
 
         // Log
         console2.log("Deployed SparkVault proxy:");
