@@ -11,6 +11,9 @@
   "lib/openzeppelin-contracts-upgradeable": {
     "rev": "e725abddf1e01cf05ace496e950fc8e243cc7cab"
   },
+  "lib/spark-address-registry": {
+    "rev": "d3247083428eb9f7ebe797fd47758463401d1c26"
+  },
   "lib/token-tests": {
     "rev": "6bdd5a38586970acf27166c3205093fd3450d530"
   }

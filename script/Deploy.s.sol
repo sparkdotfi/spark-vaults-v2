@@ -16,8 +16,6 @@ import { SparkVault } from "src/SparkVault.sol";
 
 contract DeploySparkVaultImpl is Script {
 
-    bytes32 DEFAULT_ADMIN_ROLE = 0x00;
-
     using ScriptTools for string;
     using stdJson     for string;
 
@@ -37,7 +35,7 @@ contract DeploySparkVaultImpl is Script {
         address impl = address(new SparkVault());
         vm.stopBroadcast();
 
-        console2.log("Deployed SparkVault implementation:")
+        console2.log("Deployed SparkVault implementation:");
         console2.log("  impl: ",            impl);
         console2.log("  block.chainId: ",   block.chainid);
         console2.log("  block.timestamp: ", block.timestamp);
@@ -46,7 +44,11 @@ contract DeploySparkVaultImpl is Script {
 
 }
 
-contract DeploySparkVaultProxy {
+contract DeploySparkVaultProxy is Script {
+
+    using ScriptTools for string;
+    using stdJson     for string;
+
     address impl  = vm.envAddress("SPARK_VAULT_IMPL");
     address admin = Ethereum.SPARK_PROXY;
 
@@ -55,9 +57,9 @@ contract DeploySparkVaultProxy {
         vm.setEnv("FOUNDRY_EXPORTS_OVERWRITE_LATEST", "true");
 
         // Read config
-        string memory chainName  = vm.envString("SPARK_VAULT_CHAIN_NAME");
+        string memory chainName = vm.envString("SPARK_VAULT_CHAIN_NAME");
         string memory assetName = vm.envString("SPARK_VAULT_ASSET_NAME");
-        string memory fileSlug = string(abi.encodePacked(
+        string memory fileSlug  = string(abi.encodePacked(
             chainName,
             "-",
             assetName
@@ -68,7 +70,7 @@ contract DeploySparkVaultProxy {
         string  memory name   = inputConfig.readString(".name");
         string  memory symbol = inputConfig.readString(".symbol");
 
-        // Depoy SparkVault proxy
+        // Deploy SparkVault proxy
         vm.startBroadcast();
         address proxy = address(new ERC1967Proxy(
             impl,
@@ -88,6 +90,6 @@ contract DeploySparkVaultProxy {
         console2.log("  asset: ",     asset);
         console2.log("  name:  ",     name);
         console2.log("  symbol:",     symbol);
-
     }
+
 }
