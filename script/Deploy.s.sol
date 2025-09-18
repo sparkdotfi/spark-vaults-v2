@@ -1,16 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity ^0.8.25;
 
-import { Script, console2 } from "forge-std/Script.sol";
+import { Script, console2, stdJson } from "forge-std/Script.sol";
 
 import { ScriptTools } from "dss-test/ScriptTools.sol";
 
-import { Script, console2, stdJson } from "forge-std/Script.sol";
-// import { Test }                      from "forge-std/Test.sol";
+import { ERC1967Proxy } from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 import { Ethereum } from "spark-address-registry/Ethereum.sol";
-
-import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 import { SparkVault } from "src/SparkVault.sol";
 
@@ -72,18 +69,38 @@ contract DeploySparkVaultProxy is Script {
 
         // Deploy SparkVault proxy
         vm.startBroadcast();
-        address proxy = address(new ERC1967Proxy(
+        SparkVault proxy = SparkVault(address(new ERC1967Proxy(
             impl,
             abi.encodeCall(
                 SparkVault.initialize,
                 (asset, name, symbol, admin)
             )
-        ));
+        )));
         vm.stopBroadcast();
+
+        // Check
+        require(proxy.asset() == asset, "asset");
+
+        require(keccak256(bytes(proxy.name()))   == keccak256(bytes(name)), "name");
+        require(keccak256(bytes(proxy.symbol())) == keccak256(bytes(symbol)), "symbol");
+
+        require(proxy.getRoleMemberCount(proxy.DEFAULT_ADMIN_ROLE()) == 1, "admin count");
+        require(proxy.hasRole(proxy.DEFAULT_ADMIN_ROLE(), admin), "admin role");
+
+        require(proxy.getRoleMemberCount(proxy.SETTER_ROLE()) == 0, "setter count");
+        require(proxy.getRoleMemberCount(proxy.TAKER_ROLE())  == 0, "taker count");
+
+        require(proxy.chi()        == 1e27, "chi");
+        require(proxy.rho()        == block.timestamp, "rho");
+        require(proxy.vsr()        == 1e27, "vsr");
+        require(proxy.minVsr()     == 1e27, "minVsr");
+        require(proxy.maxVsr()     == 1e27, "maxVsr");
+        require(proxy.depositCap() == 0, "depositCap");
+
 
         // Log
         console2.log("Deployed SparkVault proxy:");
-        console2.log("  proxy: ",     proxy);
+        console2.log("  proxy: ",     address(proxy));
         console2.log("  impl:  ",     impl);
         console2.log("  chainName: ", chainName);
         console2.log("  assetName: ", assetName);
