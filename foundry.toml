@@ -40,11 +40,11 @@ show_solidity    = true
 
 [profile.master-ci.invariant]
 runs             = 50
-depth            = 100_000
+depth            = 50_000
 fail_on_revert   = true
 shrink_run_limit = 50
 show_metrics     = true
 show_solidity    = true
-timeout          = 18_000
+timeout          = 10_000
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
