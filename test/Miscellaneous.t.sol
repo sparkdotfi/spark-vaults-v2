@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity ^0.8.25;
 
+import { IERC20Metadata } from "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+
 import "./TestBase.t.sol";
 
 contract SparkVaultInitializeFailureTests is SparkVaultTestBase {
@@ -44,14 +46,15 @@ contract SparkVaultInitializeSuccessTests is SparkVaultTestBase {
             ),
             bytes32(0)
         );
-        assertEq(vault.asset(),  address(0));
-        assertEq(vault.name(),   "");
-        assertEq(vault.symbol(), "");
-        assertEq(vault.chi(),    0);
-        assertEq(vault.rho(),    0);
-        assertEq(vault.vsr(),    0);
-        assertEq(vault.minVsr(), 0);
-        assertEq(vault.maxVsr(), 0);
+        assertEq(vault.asset(),    address(0));
+        assertEq(vault.name(),     "");
+        assertEq(vault.decimals(), 0);
+        assertEq(vault.symbol(),   "");
+        assertEq(vault.chi(),      0);
+        assertEq(vault.rho(),      0);
+        assertEq(vault.vsr(),      0);
+        assertEq(vault.minVsr(),   0);
+        assertEq(vault.maxVsr(),   0);
 
         assertFalse(vault.hasRole(DEFAULT_ADMIN_ROLE, admin));
 
@@ -71,14 +74,15 @@ contract SparkVaultInitializeSuccessTests is SparkVaultTestBase {
             bytes32(uint256(1))
         );
 
-        assertEq(vault.asset(),  address(asset));
-        assertEq(vault.name(),   "Spark Savings USDC V2");
-        assertEq(vault.symbol(), "spUSDC");
-        assertEq(vault.chi(),     RAY);
-        assertEq(vault.rho(),     uint64(block.timestamp));
-        assertEq(vault.vsr(),     RAY);
-        assertEq(vault.minVsr(),  RAY);
-        assertEq(vault.maxVsr(),  RAY);
+        assertEq(vault.asset(),    address(asset));
+        assertEq(vault.name(),     "Spark Savings USDC V2");
+        assertEq(vault.decimals(), IERC20Metadata(address(asset)).decimals());
+        assertEq(vault.symbol(),   "spUSDC");
+        assertEq(vault.chi(),      RAY);
+        assertEq(vault.rho(),      uint64(block.timestamp));
+        assertEq(vault.vsr(),      RAY);
+        assertEq(vault.minVsr(),   RAY);
+        assertEq(vault.maxVsr(),   RAY);
 
         assertTrue(vault.hasRole(DEFAULT_ADMIN_ROLE, admin));
     }
