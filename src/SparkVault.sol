@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity ^0.8.25;
 
-import { ERC1967Utils } from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Utils.sol";
-import { SafeERC20 }    from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
-import { IERC20 }       from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import { ERC1967Utils }   from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Utils.sol";
+import { SafeERC20 }      from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import { IERC20 }         from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import { IERC20Metadata } from "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 import { AccessControlEnumerableUpgradeable }
     from "openzeppelin-contracts-upgradeable/contracts/access/extensions/AccessControlEnumerableUpgradeable.sol";
@@ -50,13 +51,13 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
 
     string public constant version = "1";
 
-    uint8 public constant decimals = 18;
-
     /**********************************************************************************************/
     /*** Storage variables                                                                      ***/
     /**********************************************************************************************/
 
     address public asset;
+
+    uint8 public decimals;
 
     string public name;
     string public symbol;
@@ -88,9 +89,10 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
     function initialize(address asset_, string memory name_, string memory symbol_, address admin)
         initializer external
     {
-        asset  = asset_;
-        name   = name_;
-        symbol = symbol_;
+        asset    = asset_;
+        decimals = IERC20Metadata(asset_).decimals();
+        name     = name_;
+        symbol   = symbol_;
 
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
 
