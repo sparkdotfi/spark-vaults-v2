@@ -82,7 +82,7 @@ contract DeploySparkVaultProxy is Script {
         // Check
         require(proxy.asset() == asset, "asset");
 
-        require(proxy.decimals()   == IERC20Metadata(asset).decimals(), "decimals");
+        require(proxy.decimals() == IERC20Metadata(asset).decimals(), "decimals");
 
         require(keccak256(bytes(proxy.name()))   == keccak256(bytes(name)),   "name");
         require(keccak256(bytes(proxy.symbol())) == keccak256(bytes(symbol)), "symbol");
