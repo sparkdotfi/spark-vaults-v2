@@ -5,7 +5,8 @@ import { Script, console2, stdJson } from "forge-std/Script.sol";
 
 import { ScriptTools } from "dss-test/ScriptTools.sol";
 
-import { ERC1967Proxy } from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import { ERC1967Proxy }   from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import { IERC20Metadata } from "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 import { Ethereum } from "spark-address-registry/Ethereum.sol";
 
@@ -80,6 +81,8 @@ contract DeploySparkVaultProxy is Script {
 
         // Check
         require(proxy.asset() == asset, "asset");
+
+        require(proxy.decimals()   == IERC20Metadata(asset).decimals(), "decimals");
 
         require(keccak256(bytes(proxy.name()))   == keccak256(bytes(name)),   "name");
         require(keccak256(bytes(proxy.symbol())) == keccak256(bytes(symbol)), "symbol");
