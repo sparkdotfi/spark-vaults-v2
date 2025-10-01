@@ -5,6 +5,14 @@ import { IERC20Metadata } from "openzeppelin-contracts/contracts/token/ERC20/ext
 
 import "./TestBase.t.sol";
 
+contract MockERC20SixDecimals is MockERC20 {
+
+    function decimals() public pure override returns (uint8) {
+        return 6;
+    }
+
+}
+
 contract SparkVaultInitializeFailureTests is SparkVaultTestBase {
 
     function test_initialize_alreadyInitialized() public {
@@ -25,7 +33,7 @@ contract SparkVaultInitializeSuccessTests is SparkVaultTestBase {
     // is also used (and that also defines RAY).
     uint256 constant internal RAY = 1e27;
 
-    function test_initialize() public {
+    function test_initialize_eighteenDecimals() public {
         // This is from OpenZeppelin's Initializable.sol, which is used in SparkVault.
         // keccak256(abi.encode(uint256(keccak256("openzeppelin.storage.Initializable")) - 1)) & ~bytes32(uint256(0xff))
         bytes32 INITIALIZABLE_STORAGE = 0xf0c57e16840df040f15088dc2f81fe391c3923bec73e23a9662efc9c229c6a00;
@@ -60,8 +68,8 @@ contract SparkVaultInitializeSuccessTests is SparkVaultTestBase {
 
         vault.initialize(
             address(asset),
-            "Spark Savings USDC V2",
-            "spUSDC",
+            "Spark Savings USDS V2",
+            "spUSDS",
             admin
         );
 
@@ -75,9 +83,10 @@ contract SparkVaultInitializeSuccessTests is SparkVaultTestBase {
         );
 
         assertEq(vault.asset(),    address(asset));
-        assertEq(vault.name(),     "Spark Savings USDC V2");
+        assertEq(vault.name(),     "Spark Savings USDS V2");
         assertEq(vault.decimals(), IERC20Metadata(address(asset)).decimals());
-        assertEq(vault.symbol(),   "spUSDC");
+        assertEq(vault.decimals(), 18);
+        assertEq(vault.symbol(),   "spUSDS");
         assertEq(vault.chi(),      RAY);
         assertEq(vault.rho(),      uint64(block.timestamp));
         assertEq(vault.vsr(),      RAY);
@@ -85,6 +94,61 @@ contract SparkVaultInitializeSuccessTests is SparkVaultTestBase {
         assertEq(vault.maxVsr(),   RAY);
 
         assertTrue(vault.hasRole(DEFAULT_ADMIN_ROLE, admin));
+    }
+
+    function test_initialize_sixDecimals() public {
+        MockERC20SixDecimals sixDecimalsAsset = new MockERC20SixDecimals();
+
+        // This is from OpenZeppelin's Initializable.sol, which is used in SparkVault.
+        // keccak256(abi.encode(uint256(keccak256("openzeppelin.storage.Initializable")) - 1)) & ~bytes32(uint256(0xff))
+        bytes32 INITIALIZABLE_STORAGE = 0xf0c57e16840df040f15088dc2f81fe391c3923bec73e23a9662efc9c229c6a00;
+
+        // Overwrite vault deployment from setUp() to test initialization
+        vault = SparkVault(
+            address(new ERC1967Proxy(
+                address(new SparkVault()),
+                ""
+            ))
+        );
+
+        // Assert that the vault is not initialized
+        assertEq(
+            vm.load(
+                address(vault),
+                INITIALIZABLE_STORAGE
+            ),
+            bytes32(0)
+        );
+
+        assertEq(vault.asset(),    address(0));
+        assertEq(vault.name(),     "");
+        assertEq(vault.decimals(), 0);
+        assertEq(vault.symbol(),   "");
+        assertEq(vault.chi(),      0);
+        assertEq(vault.rho(),      0);
+        assertEq(vault.vsr(),      0);
+        assertEq(vault.minVsr(),   0);
+        assertEq(vault.maxVsr(),   0);
+
+        assertFalse(vault.hasRole(DEFAULT_ADMIN_ROLE, admin));
+
+        vault.initialize(
+            address(sixDecimalsAsset),
+            "Spark Savings USDC V2",
+            "spUSDC",
+            admin
+        );
+
+        assertEq(vault.asset(),    address(sixDecimalsAsset));
+        assertEq(vault.name(),     "Spark Savings USDC V2");
+        assertEq(vault.decimals(), IERC20Metadata(address(sixDecimalsAsset)).decimals());
+        assertEq(vault.decimals(), 6);
+        assertEq(vault.symbol(),   "spUSDC");
+        assertEq(vault.chi(),      RAY);
+        assertEq(vault.rho(),      uint64(block.timestamp));
+        assertEq(vault.vsr(),      RAY);
+        assertEq(vault.minVsr(),   RAY);
+        assertEq(vault.maxVsr(),   RAY);
     }
 
 }
@@ -185,4 +249,3 @@ contract SparkVaultConvenienceViewFunctionTests is SparkVaultTestBase {
     }
 
 }
-

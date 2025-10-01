@@ -89,12 +89,13 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
     function initialize(address asset_, string memory name_, string memory symbol_, address admin)
         initializer external
     {
-        asset    = asset_;
-        decimals = IERC20Metadata(asset_).decimals();
-        name     = name_;
-        symbol   = symbol_;
+        asset  = asset_;
+        name   = name_;
+        symbol = symbol_;
 
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
+
+        decimals = IERC20Metadata(asset_).decimals();
 
         chi = uint192(RAY);
         rho = uint64(block.timestamp);
