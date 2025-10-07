@@ -18,7 +18,6 @@ contract DeploySparkVaultImpl is Script {
     using stdJson     for string;
 
     function run() public {
-        vm.setEnv("FOUNDRY_ROOT_CHAINID",             "1");
         vm.setEnv("FOUNDRY_EXPORTS_OVERWRITE_LATEST", "true");
 
         // TODO: Figure out why this doesn't work. Until then, --rpc-url must be passed to `forge
@@ -51,7 +50,6 @@ contract DeploySparkVaultProxy is Script {
     address admin = Ethereum.SPARK_PROXY;
 
     function run() public {
-        vm.setEnv("FOUNDRY_ROOT_CHAINID",             "1");
         vm.setEnv("FOUNDRY_EXPORTS_OVERWRITE_LATEST", "true");
 
         // Read config
