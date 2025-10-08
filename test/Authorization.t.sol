@@ -8,17 +8,22 @@ import "forge-std/console2.sol";
 contract DemoIssueTests is SparkVaultTestBase {
 
     function test_demo_arbitrum_issue() external {
-        console2.log("\n\nLOG ISSUE");
+        uint256 expectedBlockNumber = 385025871;
+        uint256 expectedTimestamp   = 1759342800;
 
-        console2.log("block.number   ", block.number);
-        console2.log("block.timestamp", block.timestamp);
-        console2.log("chainId        ", block.chainid);
+        vm.createSelectFork(getChain("arbitrum_one").rpcUrl, expectedBlockNumber);
 
-        vm.createSelectFork(getChain("arbitrum_one").rpcUrl, 385025871);
 
-        console2.log("block.number   ", block.number);
-        console2.log("block.timestamp", block.timestamp);
-        console2.log("chainId        ", block.chainid);
+        console2.log("expectedBlockNumber", expectedBlockNumber);
+        console2.log("expectedTimestamp  ", expectedTimestamp);
+        console2.log("block.number       ", block.number);
+        console2.log("block.timestamp    ", block.timestamp);
+        console2.log("chainId            ", block.chainid);
+
+        console2.log(
+            "\nCode length of contract deployed at block 320063428:",
+            address(0x98f567464e91e9B4831d3509024b7868f9F79ee1).code.length
+        );
     }
 
 }
