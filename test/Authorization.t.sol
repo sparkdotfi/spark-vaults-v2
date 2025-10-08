@@ -13,7 +13,6 @@ contract DemoIssueTests is SparkVaultTestBase {
 
         vm.createSelectFork(getChain("arbitrum_one").rpcUrl, expectedBlockNumber);
 
-
         console2.log("expectedBlockNumber", expectedBlockNumber);
         console2.log("expectedTimestamp  ", expectedTimestamp);
         console2.log("block.number       ", block.number);
