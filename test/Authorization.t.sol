@@ -3,6 +3,26 @@ pragma solidity ^0.8.25;
 
 import "./TestBase.t.sol";
 
+import "forge-std/console2.sol";
+
+contract DemoIssueTests is SparkVaultTestBase {
+
+    function test_demo_arbitrum_issue() external {
+        console2.log("\n\nLOG ISSUE");
+
+        console2.log("block.number   ", block.number);
+        console2.log("block.timestamp", block.timestamp);
+        console2.log("chainId        ", block.chainid);
+
+        vm.createSelectFork(getChain("arbitrum_one").rpcUrl, 385025871);
+
+        console2.log("block.number   ", block.number);
+        console2.log("block.timestamp", block.timestamp);
+        console2.log("chainId        ", block.chainid);
+    }
+
+}
+
 contract SparkVaultSetVsrBoundsFailureTests is SparkVaultTestBase {
 
     function test_setVsrBounds_notAdmin() public {
