@@ -23,8 +23,8 @@ runs = 10000
 runs = 500000
 
 [invariant]
-runs             = 3
-depth            = 5_000
+runs             = 30
+depth            = 100
 fail_on_revert   = true
 shrink_run_limit = 50
 show_metrics     = true

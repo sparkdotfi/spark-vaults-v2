@@ -5,9 +5,9 @@ import { HandlerBase } from "./HandlerBase.sol";
 
 contract AdminHandler is HandlerBase {
 
-    address admin;
-    address setter;
-    address taker;
+    address public admin;
+    address public setter;
+    address public taker;
 
     bytes32 DEFAULT_ADMIN_ROLE = 0x00;
     bytes32 SETTER_ROLE        = keccak256("SETTER_ROLE");

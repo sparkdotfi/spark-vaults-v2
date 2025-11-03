@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity ^0.8.25;
 
+import { console2 } from "forge-std/console2.sol";
+
 import { SparkVaultInvariantTestBase } from "./InvariantsBase.t.sol";
 
 import { AdminHandler }    from "./handlers/AdminHandler.sol";
@@ -27,23 +29,94 @@ contract SparkVaultInvariantTest is SparkVaultInvariantTestBase {
     }
 
     function invariant_userInvariants() public {
+        // NOTE: Skipping invariants C and D because they don't apply when deposit cap is set to type(uint256).max
         for (uint256 i = 0; i < userHandler.N(); i++) {
             address user = userHandler.users(i);
-            _userInvariant_balanceOfCannotChange(user);
-            _userInvariant_assetsOfCannotDecrease(user);
-            // _userInvariant_userCannotDepositMoreThanMax(user);
-            // _userInvariant_userCannotMintMoreThanMax(user);
-            // _userInvariant_userCannotRedeemMoreThanMax(user);
-            // _userInvariant_userCannotWithdrawMoreThanMax(user);
-            _userInvariant_userCanDepositAndWithdrawAtomically(user);
+            this.userInvariant_A_balanceOfCannotChange(user);
+            this.userInvariant_B_assetsOfCannotDecrease(user);
+            this.userInvariant_E_userCannotRedeemMoreThanMax(user);
+            this.userInvariant_F_userCannotWithdrawMoreThanMax(user);
+            this.userInvariant_G_userCanDepositAndWithdrawAtomically(user);
+            this.userInvariant_H_assetsOfLeTotalAssets(user);
+            this.userInvariant_I_maxRedeemLeBalance(user);
+            this.userInvariant_J_maxWithdrawLeAssets(user);
+            this.userInvariant_K_conversionSymmetry(user);
         }
     }
 
     function invariant_vaultInvariants() public {
-        _vaultInvariant_assetsOutstandingLeTotalAssets();
-        _vaultInvariant_nowChiEqualsDrip();
-        _vaultInvariant_sumUserAssetsLeTotalAssets();
-        _vaultInvariant_sumUserSharesEqTotalSupply();
-        _vaultInvariant_totalAssetsConversion();
+        this.vaultInvariant_A_sumUserSharesEqTotalSupply();
+        this.vaultInvariant_B_sumUserAssetsLeTotalAssets();
+        this.vaultInvariant_C_assetsOutstandingLeTotalAssets();
+        this.vaultInvariant_D_nowChiEqualsDrip();
+        this.vaultInvariant_E_totalAssetsConversion();
     }
+
+    function afterInvariant() public {
+        // Simulate bank run, draining all liquidity
+        this.simulateBankRun();
+
+        _checkInvariants();
+
+        skip(30 minutes);
+
+        _checkInvariants();
+
+        // Return 10% of the total assets to the vault
+        _give(vault.totalAssets() / 10);
+
+        _checkInvariants();
+
+        skip(30 minutes);
+
+        _checkInvariants();
+
+        // Simulate a second bank run, draining all liquidity
+        this.simulateBankRun();
+
+        _checkInvariants();
+
+        skip(30 minutes);
+
+        _checkInvariants();
+
+        // Set VSR to 0% APY to freeze liabilities
+        adminHandler.setVsrBounds(1e27, 1e27);
+        adminHandler.setVsr(1e27);
+
+        _checkInvariants();
+
+        skip(30 minutes);
+
+        _checkInvariants();
+
+        // Return remaining amount of total assets to the vault
+        _give(vault.totalAssets());
+
+        assertEq(vault.assetsOutstanding(), 0);
+
+        // Simulate a third bank run, performing a full exit
+        this.simulateBankRun();
+
+        _checkInvariants();
+
+        assertEq(vault.totalSupply(),       0);
+        assertEq(vault.totalAssets(),       0);
+        assertEq(vault.assetsOutstanding(), 0);
+    }
+
+    function _checkInvariants() public {
+        this.invariant_userInvariants();
+        this.invariant_vaultInvariants();
+    }
+
+    // NOTE: Need an unbounded version of this function to ensure totalAssets is always reached
+    function _give(uint256 amount) public {
+        address taker = adminHandler.taker();
+        deal(address(asset), taker, amount);
+
+        vm.prank(taker);
+        asset.transfer(address(vault), amount);
+    }
+
 }
