@@ -202,6 +202,8 @@ contract SparkVaultInvariantTestBase is SparkVaultTestBase {
 
     function simulateBankRun() public {
         for (uint256 i = 0; i < userHandler.N(); i++) {
+            skip(2 minutes);
+
             address user = userHandler.users(i);
 
             uint256 userBalance = vault.balanceOf(user);
