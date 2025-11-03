@@ -20,7 +20,7 @@ contract SparkVaultInvariantTest is SparkVaultInvariantTestBase {
 
         adminHandler    = new AdminHandler(address(vault));
         externalHandler = new ExternalHandler(address(vault));
-        userHandler     = new UserHandler(address(vault), 5);
+        userHandler     = new UserHandler(address(vault), 25);
 
         // Foundry will call only the functions of the target contracts
         targetContract(address(adminHandler));
@@ -30,7 +30,7 @@ contract SparkVaultInvariantTest is SparkVaultInvariantTestBase {
 
     function invariant_userInvariants() public {
         // NOTE: Skipping invariants C and D because they don't apply when deposit cap is set to type(uint256).max
-        for (uint256 i = 0; i < userHandler.N(); i++) {
+        for (uint256 i = 0; i < userHandler.numUsers(); i++) {
             address user = userHandler.users(i);
             this.userInvariant_A_balanceOfCannotChange(user);
             this.userInvariant_B_assetsOfCannotDecrease(user);
@@ -56,39 +56,23 @@ contract SparkVaultInvariantTest is SparkVaultInvariantTestBase {
         // Simulate bank run, draining all liquidity
         this.simulateBankRun();
 
-        _checkInvariants();
-
-        skip(30 minutes);
-
-        _checkInvariants();
+        _checkInvariantsOverTime();
 
         // Return 10% of the total assets to the vault
         _give(vault.totalAssets() / 10);
 
-        _checkInvariants();
-
-        skip(30 minutes);
-
-        _checkInvariants();
+        _checkInvariantsOverTime();
 
         // Simulate a second bank run, draining all liquidity
         this.simulateBankRun();
 
-        _checkInvariants();
-
-        skip(30 minutes);
-
-        _checkInvariants();
+        _checkInvariantsOverTime();
 
         // Set VSR to 0% APY to freeze liabilities
         adminHandler.setVsrBounds(1e27, 1e27);
         adminHandler.setVsr(1e27);
 
-        _checkInvariants();
-
-        skip(30 minutes);
-
-        _checkInvariants();
+        _checkInvariantsOverTime();
 
         // Return remaining amount of total assets to the vault
         _give(vault.totalAssets());
@@ -105,7 +89,12 @@ contract SparkVaultInvariantTest is SparkVaultInvariantTestBase {
         assertEq(vault.assetsOutstanding(), 0);
     }
 
-    function _checkInvariants() public {
+    function _checkInvariantsOverTime() public {
+        this.invariant_userInvariants();
+        this.invariant_vaultInvariants();
+
+        skip(30 minutes);
+
         this.invariant_userInvariants();
         this.invariant_vaultInvariants();
     }

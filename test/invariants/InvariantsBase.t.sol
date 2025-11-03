@@ -170,7 +170,7 @@ contract SparkVaultInvariantTestBase is SparkVaultTestBase {
 
     function vaultInvariant_A_sumUserSharesEqTotalSupply() public view {
         uint256 sum;
-        for (uint256 i = 0; i < userHandler.N(); i++) {
+        for (uint256 i = 0; i < userHandler.numUsers(); i++) {
             sum += vault.balanceOf(userHandler.users(i));
         }
         assertEq(sum, vault.totalSupply());
@@ -178,7 +178,7 @@ contract SparkVaultInvariantTestBase is SparkVaultTestBase {
 
     function vaultInvariant_B_sumUserAssetsLeTotalAssets() public view {
         uint256 sum;
-        for (uint256 i = 0; i < userHandler.N(); i++) {
+        for (uint256 i = 0; i < userHandler.numUsers(); i++) {
             sum += vault.assetsOf(userHandler.users(i));
         }
         assertLe(sum, vault.totalAssets());
@@ -201,7 +201,7 @@ contract SparkVaultInvariantTestBase is SparkVaultTestBase {
     /**********************************************************************************************/
 
     function simulateBankRun() public {
-        for (uint256 i = 0; i < userHandler.N(); i++) {
+        for (uint256 i = 0; i < userHandler.numUsers(); i++) {
             skip(2 minutes);
 
             address user = userHandler.users(i);
@@ -249,7 +249,7 @@ contract SparkVaultInvariantTestBase is SparkVaultTestBase {
 
     // NOTE: Have to set directly to not expose setters as part of the public interface
     function _setLastBalanceOf(address user, uint256 lastBalanceOf) public {
-        vm.store(address(userHandler), keccak256(abi.encode(user, 35)), bytes32(lastBalanceOf));
+        vm.store(address(userHandler), keccak256(abi.encode(user, 36)), bytes32(lastBalanceOf));
         assertEq(
             userHandler.lastBalanceOf(user),
             lastBalanceOf,
@@ -258,7 +258,7 @@ contract SparkVaultInvariantTestBase is SparkVaultTestBase {
     }
 
     function _setLastAssetsOf(address user, uint256 lastAssetsOf) public {
-        vm.store(address(userHandler), keccak256(abi.encode(user, 36)), bytes32(lastAssetsOf));
+        vm.store(address(userHandler), keccak256(abi.encode(user, 37)), bytes32(lastAssetsOf));
         assertEq(
             userHandler.lastAssetsOf(user),
             lastAssetsOf,
@@ -267,7 +267,7 @@ contract SparkVaultInvariantTestBase is SparkVaultTestBase {
     }
 
     function _setTotalBalance(uint256 totalBalance) public {
-        vm.store(address(userHandler), bytes32(uint256(37)), bytes32(totalBalance));
+        vm.store(address(userHandler), bytes32(uint256(38)), bytes32(totalBalance));
         assertEq(
             userHandler.totalBalance(),
             totalBalance,

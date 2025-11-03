@@ -18,7 +18,7 @@ contract AdminHandler is HandlerBase {
     uint256 constant FORTY_PCT_VSR = 1.000000010669464688489416886e27;  // 40% APY
     uint256 constant MAX_VSR       = 1.000000021979553151239153027e27;  // 100% APY
 
-    constructor(address _vault) HandlerBase(_vault) {
+    constructor(address vault_) HandlerBase(vault_) {
         admin  = vault.getRoleMember(DEFAULT_ADMIN_ROLE, 0);
         setter = vault.getRoleMember(SETTER_ROLE,        0);
         taker  = vault.getRoleMember(TAKER_ROLE,         0);

@@ -9,8 +9,7 @@ import { HandlerBase } from "./HandlerBase.sol";
 
 contract UserHandler is HandlerBase {
 
-    // Handler specific storage
-    uint256 public constant N = 5;
+    uint256 public numUsers;
 
     address[] public users;
 
@@ -19,8 +18,9 @@ contract UserHandler is HandlerBase {
 
     uint256 public totalBalance;
 
-    constructor(address _vault, uint256 numUsers) HandlerBase(_vault) {
-        for (uint256 i = 0; i < numUsers; i++) {
+    constructor(address vault_, uint256 numUsers_) HandlerBase(vault_) {
+        numUsers = numUsers_;
+        for (uint256 i = 0; i < numUsers_; i++) {
             users.push(makeAddr(string(abi.encodePacked("user", i))));
         }
     }

@@ -5,7 +5,7 @@ import { HandlerBase } from "./HandlerBase.sol";
 
 contract ExternalHandler is HandlerBase {
 
-    constructor(address _vault) HandlerBase(_vault) {}
+    constructor(address vault_) HandlerBase(vault_) {}
 
     function warp(uint256 secs) public totalAssetsCheck accountingCheck {
         secs = _bound(secs, 0, 10 days);
