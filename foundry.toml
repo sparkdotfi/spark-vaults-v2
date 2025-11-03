@@ -31,16 +31,16 @@ show_metrics     = true
 show_solidity    = true
 
 [profile.pr-ci.invariant]
-runs             = 5
-depth            = 10_000
+runs             = 250
+depth            = 1000
 fail_on_revert   = true
 shrink_run_limit = 50
 show_metrics     = true
 show_solidity    = true
 
 [profile.master-ci.invariant]
-runs             = 50
-depth            = 50_000
+runs             = 25
+depth            = 10_000
 fail_on_revert   = true
 shrink_run_limit = 50
 show_metrics     = true

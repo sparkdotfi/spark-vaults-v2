@@ -82,7 +82,7 @@ contract SparkVaultInvariantTest is SparkVaultInvariantTestBase {
         // Simulate a third bank run, performing a full exit
         this.simulateBankRun();
 
-        _checkInvariants();
+        _checkInvariantsOverTime();
 
         assertEq(vault.totalSupply(),       0);
         assertEq(vault.totalAssets(),       0);
