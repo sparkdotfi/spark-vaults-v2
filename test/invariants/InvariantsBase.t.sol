@@ -172,7 +172,7 @@ contract SparkVaultInvariantTestBase is SparkVaultTestBase {
         assertLe(vault.assetsOutstanding(), vault.totalAssets());
     }
 
-    function _vaultInvariant_nowChiEqualsdrip() internal {
+    function _vaultInvariant_nowChiEqualsDrip() internal {
         assertEq(vault.nowChi(), vault.drip());
     }
 

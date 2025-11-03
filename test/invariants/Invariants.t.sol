@@ -38,4 +38,12 @@ contract SparkVaultInvariantTest is SparkVaultInvariantTestBase {
             _userInvariant_userCanDepositAndWithdrawAtomically(user);
         }
     }
+
+    function invariant_vaultInvariants() public {
+        _vaultInvariant_assetsOutstandingLeTotalAssets();
+        _vaultInvariant_nowChiEqualsDrip();
+        _vaultInvariant_sumUserAssetsLeTotalAssets();
+        _vaultInvariant_sumUserSharesEqTotalSupply();
+        _vaultInvariant_totalAssetsConversion();
+    }
 }
