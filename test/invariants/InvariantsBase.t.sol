@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity ^0.8.25;
 
-import { console2 } from "forge-std/console2.sol";
-
 import { AdminHandler }    from "./handlers/AdminHandler.sol";
 import { ExternalHandler } from "./handlers/ExternalHandler.sol";
 import { UserHandler }     from "./handlers/UserHandler.sol";

@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity ^0.8.25;
 
-import { console2 } from "forge-std/console2.sol";
-
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 
 import { HandlerBase } from "./HandlerBase.sol";
