@@ -8,8 +8,6 @@ import { ScriptTools } from "dss-test/ScriptTools.sol";
 import { ERC1967Proxy }   from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { IERC20Metadata } from "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
-import { Ethereum } from "spark-address-registry/Ethereum.sol";
-
 import { SparkVault } from "src/SparkVault.sol";
 
 contract DeploySparkVaultImpl is Script {
@@ -47,7 +45,6 @@ contract DeploySparkVaultProxy is Script {
     using stdJson     for string;
 
     address impl  = vm.envAddress("SPARK_VAULT_IMPL");
-    address admin = Ethereum.SPARK_PROXY;
 
     function run() public {
         vm.setEnv("FOUNDRY_EXPORTS_OVERWRITE_LATEST", "true");
@@ -62,6 +59,7 @@ contract DeploySparkVaultProxy is Script {
         ));
         string memory inputConfig = ScriptTools.readInput(fileSlug);
 
+        address admin         = inputConfig.readAddress(".admin");
         address asset         = inputConfig.readAddress(".asset");
         string  memory name   = inputConfig.readString(".name");
         string  memory symbol = inputConfig.readString(".symbol");
