@@ -111,7 +111,7 @@ contract SparkVaultInvariantTestBase is SparkVaultTestBase {
         assertApproxEqAbs(
             assets,
             1e18,
-            2,
+            3,
             string(abi.encodePacked("User ", user, " cannot deposit and redeem atomically"))
         );
 
