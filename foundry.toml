@@ -20,7 +20,7 @@ runs = 100
 runs = 10000
 
 [profile.master-ci.fuzz]
-runs = 500000
+runs = 5_000_000
 
 [invariant]
 runs             = 30
