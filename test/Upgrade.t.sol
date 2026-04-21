@@ -94,6 +94,9 @@ contract SparkVaultUpgradeTest is SparkVaultTestBase {
         assertEq(uint256(vault.chi()), uint192(1e27));
         assertEq(uint256(vault.vsr()), FOUR_PCT_VSR);
 
+        assertEq(vault.depositCap(),   1_000_000e6);
+        assertEq(vault.takerMintCap(), 10_000_000e6);
+
         address[] memory defaultAdmins = vault.getRoleMembers(DEFAULT_ADMIN_ROLE);
         address[] memory setters       = vault.getRoleMembers(SETTER_ROLE);
         address[] memory takers        = vault.getRoleMembers(TAKER_ROLE);
@@ -130,6 +133,9 @@ contract SparkVaultUpgradeTest is SparkVaultTestBase {
         assertEq(uint256(vault.rho()), setVsrTimestamp);
         assertEq(uint256(vault.chi()), uint192(1e27));
         assertEq(uint256(vault.vsr()), FOUR_PCT_VSR);
+
+        assertEq(vault.depositCap(),   1_000_000e6);
+        assertEq(vault.takerMintCap(), 10_000_000e6);
 
         defaultAdmins = vault.getRoleMembers(DEFAULT_ADMIN_ROLE);
         setters       = vault.getRoleMembers(SETTER_ROLE);

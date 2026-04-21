@@ -47,6 +47,13 @@ interface ISparkVault is IERC20Permit, IERC4626, IAccessControlEnumerable {
     event DepositCapSet(uint256 oldCap, uint256 newCap);
 
     /**
+     * @notice Emitted when the maximum amount of shares that can be minted by the taker is updated.
+     * @param  oldCap The previous maximum amount of shares that can be minted by the taker
+     * @param  newCap The new maximum amount of shares that can be minted by the taker
+     */
+    event TakerMintCapSet(uint256 oldCap, uint256 newCap);
+
+    /**
      * @notice Emitted when the bounds for the Vault Savings Rate (VSR) are updated.
      * @param  oldMinVsr The previous minimum allowed VSR value [ray]
      * @param  oldMaxVsr The previous maximum allowed VSR value [ray]
@@ -69,6 +76,20 @@ interface ISparkVault is IERC20Permit, IERC4626, IAccessControlEnumerable {
      * @param  value The amount of assets withdrawn from the vault [asset units]
      */
     event Take(address indexed to, uint256 value);
+
+    /**
+     * @notice Emitted when shares are minted by accounts with TAKER_ROLE.
+     * @param  taker  The taker address minting the shares
+     * @param  shares The amount of shares minted by the taker
+     */
+    event TakerMint(address indexed taker, uint256 shares);
+
+    /**
+     * @notice Emitted when shares are burned by accounts with TAKER_ROLE.
+     * @param  taker  The taker address burning the shares
+     * @param  shares The amount of shares burned by the taker
+     */
+    event TakerBurn(address indexed taker, uint256 shares);
 
     /**
      * @notice Returns the current rate accumulator (chi).
@@ -166,5 +187,31 @@ interface ISparkVault is IERC20Permit, IERC4626, IAccessControlEnumerable {
      * @return The version string.
      */
     function version() external view returns (string memory);
+
+    /**
+     * @notice Returns the maximum amount of shares that can be minted by the taker.
+     * @return shares The maximum amount of shares that can be minted by the taker.
+     */
+    function takerMintCap() external view returns (uint256 shares);
+
+    /**
+     * @notice Sets the maximum amount of shares that can be minted by the taker.
+     * @param  shares The maximum amount of shares that can be minted by the taker.
+     */
+    function setTakerMintCap(uint256 shares) external;
+
+    /**
+     * @notice Mints shares for the taker.
+     * @dev    This function can only be called by accounts with TAKER_ROLE.
+     * @param  shares The amount of shares to mint for the taker.
+     */
+    function takerMint(uint256 shares) external;
+
+    /**
+     * @notice Burns shares for the taker.
+     * @dev    This function can only be called by accounts with TAKER_ROLE.
+     * @param  shares The amount of shares to burn for the taker.
+     */
+    function takerBurn(uint256 shares) external;
 
 }

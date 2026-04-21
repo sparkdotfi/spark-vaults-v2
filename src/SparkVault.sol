@@ -76,6 +76,8 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
 
     mapping (address => mapping (address => uint256)) public allowance;
 
+    uint256 public takerMintCap;
+
     /**********************************************************************************************/
     /*** Initialization and upgradeability                                                      ***/
     /**********************************************************************************************/
@@ -117,6 +119,11 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
         depositCap = newCap;
     }
 
+    function setTakerMintCap(uint256 newCap) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        emit TakerMintCapSet(takerMintCap, newCap);
+        takerMintCap = newCap;
+    }
+
     function setVsrBounds(uint256 minVsr_, uint256 maxVsr_) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(minVsr_ >= RAY,     "SparkVault/vsr-too-low");
         require(maxVsr_ <= MAX_VSR, "SparkVault/vsr-too-high");
@@ -143,6 +150,41 @@ contract SparkVault is AccessControlEnumerableUpgradeable, UUPSUpgradeable, ISpa
         _pushAsset(msg.sender, value);
 
         emit Take(msg.sender, value);
+    }
+
+    function takerMint(uint256 shares) external onlyRole(TAKER_ROLE) {
+        drip();
+
+        require(
+            balanceOf[msg.sender] + shares <= takerMintCap,
+            "SparkVault/taker-mint-cap-exceeded"
+        );
+
+        totalSupply = totalSupply + shares;
+
+        // Safe: balanceOf[taker] <= totalSupply
+        unchecked {
+            balanceOf[msg.sender] = balanceOf[msg.sender] + shares;
+        }
+
+        emit TakerMint(msg.sender, shares);
+        emit Transfer(address(0), msg.sender, shares);
+    }
+
+    function takerBurn(uint256 shares) external onlyRole(TAKER_ROLE) {
+        drip();
+
+        uint256 balance = balanceOf[msg.sender];
+        require(balance >= shares, "SparkVault/insufficient-balance");
+
+        // Safe: balance >= shares, and balance <= totalSupply
+        unchecked {
+            balanceOf[msg.sender] = balance - shares;
+            totalSupply           = totalSupply - shares;
+        }
+
+        emit Transfer(msg.sender, address(0), shares);
+        emit TakerBurn(msg.sender, shares);
     }
 
     /**********************************************************************************************/

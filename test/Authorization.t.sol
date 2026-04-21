@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity ^0.8.25;
 
+import { IERC20 } from "../lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+
 import "./TestBase.t.sol";
+
+import { ISparkVault } from "../src/ISparkVault.sol";
 
 contract SparkVaultSetVsrBoundsFailureTests is SparkVaultTestBase {
 
@@ -218,6 +222,47 @@ contract SparkVaultSetDepositCapSuccessTests is SparkVaultTestBase {
 
 }
 
+contract SparkVaultSetTakerMintCapFailureTests is SparkVaultTestBase {
+
+    address unauthorized = makeAddr("unauthorized");
+
+    function test_setTakerMintCap_unauthorized() external {
+        vm.expectRevert(abi.encodeWithSignature(
+            "AccessControlUnauthorizedAccount(address,bytes32)",
+            unauthorized,
+            DEFAULT_ADMIN_ROLE
+        ));
+
+        vm.prank(unauthorized);
+        vault.setTakerMintCap(1_000_000e6);
+    }
+
+}
+
+contract SparkVaultSetTakerMintCapSuccessTests is SparkVaultTestBase {
+
+    function test_setTakerMintCap() external {
+        assertEq(vault.takerMintCap(), 10_000_000e6);
+
+        vm.expectEmit(address(vault));
+        emit ISparkVault.TakerMintCapSet(10_000_000e6, 100_000_000e6);
+
+        vm.prank(admin);
+        vault.setTakerMintCap(100_000_000e6);  // 100M shares
+
+        assertEq(vault.takerMintCap(), 100_000_000e6);  // 100M shares
+
+        vm.expectEmit(address(vault));
+        emit ISparkVault.TakerMintCapSet(100_000_000e6, type(uint256).max);
+
+        vm.prank(admin);
+        vault.setTakerMintCap(type(uint256).max);
+
+        assertEq(vault.takerMintCap(), type(uint256).max);
+    }
+
+}
+
 contract SparkVaultSetVsrFailureTests is SparkVaultTestBase {
 
     function test_setVsr_notSetter() public {
@@ -344,6 +389,268 @@ contract SparkVaultTakeSuccessTests is SparkVaultTestBase {
 
         assertEq(asset.balanceOf(address(vault)), 0);
         assertEq(asset.balanceOf(taker),          1_000_000e6);
+    }
+
+}
+
+contract SparkVaultTakerMintFailureTests is SparkVaultTestBase {
+
+    address unauthorized = makeAddr("unauthorized");
+
+    function test_takerMint_unauthorized() external {
+        vm.expectRevert(abi.encodeWithSignature(
+            "AccessControlUnauthorizedAccount(address,bytes32)",
+            unauthorized,
+            TAKER_ROLE
+        ));
+
+        vm.prank(unauthorized);
+        vault.takerMint(1_000_000e6);
+    }
+
+    function test_takerMint_capExceededBoundary() external {
+        vm.prank(taker);
+        vm.expectRevert("SparkVault/taker-mint-cap-exceeded");
+        vault.takerMint(10_000_000e6 + 1);
+
+        vm.prank(taker);
+        vault.takerMint(10_000_000e6);
+    }
+
+}
+
+contract SparkVaultTakerMintSuccessTests is SparkVaultTestBase {
+
+    function test_takerMint() external {
+        assertEq(vault.chi(),                     1e27);
+        assertEq(vault.rho(),                     block.timestamp);
+        assertEq(vault.totalSupply(),             0);
+        assertEq(vault.balanceOf(taker),          0);
+        assertEq(asset.balanceOf(address(vault)), 0);
+        assertEq(asset.balanceOf(taker),          0);
+
+        skip(1 days);
+
+        vm.expectEmit(address(vault));
+        emit ISparkVault.Drip(1e27, 0);
+
+        vm.expectEmit(address(vault));
+        emit ISparkVault.TakerMint(taker, 1_000_000e6);
+
+        vm.expectEmit(address(vault));
+        emit IERC20.Transfer(address(0), taker, 1_000_000e6);
+
+        vm.prank(taker);
+        vault.takerMint(1_000_000e6);
+
+        assertEq(vault.chi(),                     1e27);
+        assertEq(vault.rho(),                     block.timestamp);
+        assertEq(vault.totalSupply(),             1_000_000e6);
+        assertEq(vault.balanceOf(taker),          1_000_000e6);
+        assertEq(asset.balanceOf(address(vault)), 0);
+        assertEq(asset.balanceOf(taker),          0);
+    }
+
+    function test_takerMint_doesNotDiluteUsers() external {
+        address user        = makeAddr("user");
+        uint256 userDeposit = 500_000e6;
+
+        // User deposits 500k assets
+
+        deal(address(asset), user, userDeposit);
+
+        vm.startPrank(user);
+
+        asset.approve(address(vault), userDeposit);
+
+        vault.deposit(userDeposit, user);
+
+        vm.stopPrank();
+
+        uint256 userSharesBefore  = vault.balanceOf(user);
+        uint256 userAssetsBefore  = vault.assetsOf(user);
+        uint256 totalAssetsBefore = vault.totalAssets();
+
+        uint256 mintShares = 2_000_000e6;
+
+        // Taker mints 2M shares
+
+        vm.prank(taker);
+        vault.takerMint(mintShares);
+
+        // User's share balance and asset claim are untouched by the Taker mint
+        assertEq(vault.balanceOf(user), userSharesBefore);
+        assertEq(vault.assetsOf(user),  userAssetsBefore);
+
+        // totalAssets grows by exactly the Taker's new claim (non-dilutive)
+        assertEq(vault.totalAssets(), totalAssetsBefore + mintShares * vault.nowChi() / 1e27);
+    }
+
+    function test_takerMint_bypassesDepositCap() external {
+        address user = makeAddr("user");
+        uint256 cap  = vault.depositCap();
+
+        // Fill the deposit cap with a user deposit
+
+        deal(address(asset), user, cap);
+
+        vm.startPrank(user);
+
+        asset.approve(address(vault), cap);
+
+        vault.deposit(cap, user);
+
+        vm.stopPrank();
+
+        // Confirm the cap is exhausted: another 1 wei deposit reverts
+        address otherUser = makeAddr("otherUser");
+
+        deal(address(asset), otherUser, 1);
+
+        vm.startPrank(otherUser);
+
+        asset.approve(address(vault), 1);
+
+        vm.expectRevert("SparkVault/deposit-cap-exceeded");
+        vault.deposit(1, otherUser);
+
+        vm.stopPrank();
+
+        // Taker can still mint, even though totalAssets is already at the cap
+        vm.prank(taker);
+        vault.takerMint(5_000_000e6);
+
+        assertEq(vault.balanceOf(taker), 5_000_000e6);
+        assertGt(vault.totalAssets(),    vault.depositCap());
+    }
+
+}
+
+contract SparkVaultTakerBurnFailureTests is SparkVaultTestBase {
+
+    address unauthorized = makeAddr("unauthorized");
+
+    function test_takerBurn_unauthorized() external {
+        vm.expectRevert(abi.encodeWithSignature(
+            "AccessControlUnauthorizedAccount(address,bytes32)",
+            unauthorized,
+            TAKER_ROLE
+        ));
+
+        vm.prank(unauthorized);
+        vault.takerBurn(1_000_000e6);
+    }
+
+    function test_takerBurn_insufficientBalanceBoundary() external {
+        vm.prank(taker);
+        vault.takerMint(1_000_000e6);
+
+        vm.expectRevert("SparkVault/insufficient-balance");
+        vm.prank(taker);
+        vault.takerBurn(1_000_000e6 + 1);
+
+        vm.prank(taker);
+        vault.takerBurn(1_000_000e6);
+    }
+
+}
+
+contract SparkVaultTakerBurnSuccessTests is SparkVaultTestBase {
+
+    function test_takerBurn() external {
+        vm.prank(taker);
+        vault.takerMint(1_000_000e6);
+
+        assertEq(vault.chi(),                     1e27);
+        assertEq(vault.rho(),                     block.timestamp);
+        assertEq(vault.totalSupply(),             1_000_000e6);
+        assertEq(vault.balanceOf(taker),          1_000_000e6);
+        assertEq(asset.balanceOf(address(vault)), 0);
+        assertEq(asset.balanceOf(taker),          0);
+
+        skip(1 days);
+
+        vm.expectEmit(address(vault));
+        emit ISparkVault.Drip(1e27, 0);
+
+        vm.expectEmit(address(vault));
+        emit IERC20.Transfer(taker, address(0), 1_000_000e6);
+
+        vm.expectEmit(address(vault));
+        emit ISparkVault.TakerBurn(taker, 1_000_000e6);
+
+        vm.prank(taker);
+        vault.takerBurn(1_000_000e6);
+
+        assertEq(vault.chi(),                     1e27);
+        assertEq(vault.rho(),                     block.timestamp);
+        assertEq(vault.totalSupply(),             0);
+        assertEq(vault.balanceOf(taker),          0);
+        assertEq(asset.balanceOf(address(vault)), 0);
+        assertEq(asset.balanceOf(taker),          0);
+    }
+
+    function test_takerBurn_doesNotMoveAssets() external {
+        address user        = makeAddr("user");
+        uint256 userDeposit = 500_000e6;
+
+        // User deposits 500k assets
+
+        deal(address(asset), user, userDeposit);
+
+        vm.startPrank(user);
+
+        asset.approve(address(vault), userDeposit);
+
+        vault.deposit(userDeposit, user);
+
+        vm.stopPrank();
+
+        uint256 mintShares = 1_000_000e6;
+
+        // Taker mints 1M shares
+
+        vm.prank(taker);
+        vault.takerMint(mintShares);
+
+        uint256 vaultAssetsBefore  = asset.balanceOf(address(vault));
+        uint256 takerAssetsBefore  = asset.balanceOf(taker);
+        uint256 userAssetsOfBefore = vault.assetsOf(user);
+
+        // Taker burns 500k shares
+
+        vm.prank(taker);
+        vault.takerBurn(mintShares / 2);
+
+        // No asset movement in either direction
+        assertEq(asset.balanceOf(address(vault)), vaultAssetsBefore);
+        assertEq(asset.balanceOf(taker),          takerAssetsBefore);
+
+        // Users' redeemable claim is untouched
+        assertEq(vault.assetsOf(user), userAssetsOfBefore);
+    }
+
+    function test_takerMintBurn_roundTrip() external {
+        uint256 chiBefore         = vault.chi();
+        uint256 rhoBefore         = vault.rho();
+        uint256 totalSupplyBefore = vault.totalSupply();
+        uint256 balanceBefore     = vault.balanceOf(taker);
+        uint256 vaultAssetsBefore = asset.balanceOf(address(vault));
+
+        uint256 shares = 2_500_000e6;
+
+        vm.prank(taker);
+        vault.takerMint(shares);
+
+        vm.prank(taker);
+        vault.takerBurn(shares);
+
+        // Full round trip leaves every tracked field identical to pre-call state
+        assertEq(vault.chi(),                     chiBefore);
+        assertEq(vault.rho(),                     rhoBefore);
+        assertEq(vault.totalSupply(),             totalSupplyBefore);
+        assertEq(vault.balanceOf(taker),          balanceBefore);
+        assertEq(asset.balanceOf(address(vault)), vaultAssetsBefore);
     }
 
 }
