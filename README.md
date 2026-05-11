@@ -27,7 +27,10 @@ Spark Vaults V2 is a fork of sUSDS, sharing much of the same functionality. The 
 
 ## Features
 
-- **ERC4626 Compliance**: Full implementation of the ERC4626 vault standard.
+- **ERC4626 Compliance**: Implements the ERC4626 vault interface with two documented divergences reviewed by Cantina + ChainSecurity:
+  - `previewRedeem` / `previewWithdraw` revert on insufficient liquidity, interpreted under the EIP clause *"MAY revert due to other conditions that would also cause redeem to revert."*
+  - `maxMint` returns `type(uint256).max` when `depositCap > type(uint256).max / RAY`, following the "no-limit sentinel" reading shared by OpenZeppelin and Solmate.
+  - The underlying asset is assumed non-rebasing, non-fee-on-transfer, and non-reentrant (see [`TECHNICAL.md`](./TECHNICAL.md) / audit reports).
 - **Continuous Rate Accumulation**: Automatic yield distribution through per-second rate accumulation based on a set rate (`vsr`).
 - **Referral System**: Built-in referral tracking.
 - **Upgradeable**: UUPS upgradeable contract architecture.
