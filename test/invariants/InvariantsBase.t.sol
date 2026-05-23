@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-pragma solidity ^0.8.25;
+pragma solidity ^0.8.35;
 
 import { AdminHandler }    from "./handlers/AdminHandler.sol";
 import { ExternalHandler } from "./handlers/ExternalHandler.sol";
 import { UserHandler }     from "./handlers/UserHandler.sol";
 
-import { SparkVaultTestBase } from "../TestBase.t.sol";
+import { SparkVaultTestBase } from "../spark-vault/TestBase.t.sol";
 
 contract SparkVaultInvariantTestBase is SparkVaultTestBase {
 

@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-pragma solidity ^0.8.25;
+pragma solidity ^0.8.35;
 
 import { Test } from "forge-std/Test.sol";
 
 import { ERC20Mock as MockERC20 } from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 import { ERC1967Proxy }           from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
-import { SparkVault } from "../src/SparkVault.sol";
+import { SparkVault } from "../../src/SparkVault.sol";
 
 contract SparkVaultTestBase is Test {
 
@@ -46,4 +46,3 @@ contract SparkVaultTestBase is Test {
     }
 
 }
-
