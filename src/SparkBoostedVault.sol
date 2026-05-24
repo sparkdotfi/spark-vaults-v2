@@ -166,26 +166,25 @@ contract SparkBoostedVault is AccessControlEnumerable, ISparkBoostedVault {
     }
 
     /**********************************************************************************************/
-    /*** ERC4626 external mutating functions                                                    ***/
+    /*** Deposit / Withdraw                                                                     ***/
     /**********************************************************************************************/
 
-    function deposit(uint256 assets, address receiver) public returns (uint256 shares) {
+    // Positions are single-shot: each address may hold at most one position at a time. To "top up"
+    // or partially exit, fully withdraw first and re-deposit; this resets the vesting clock to now.
+    // Both deposit and withdraw are locked to msg.sender — no receiver/owner overrides.
+
+    function deposit(uint256 assets) public returns (uint256 shares) {
         shares = assets * RAY / drip();
-        _mint(assets, shares, receiver);
+        _mint(assets, shares);
     }
 
-    function deposit(uint256 assets, address receiver, uint16 referral)
-        external returns (uint256 shares)
-    {
-        shares = deposit(assets, receiver);
-        emit Referral(referral, receiver, assets, shares);
+    function deposit(uint256 assets, uint16 referral) external returns (uint256 shares) {
+        shares = deposit(assets);
+        emit Referral(referral, msg.sender, assets, shares);
     }
 
-    function withdraw(uint256 assets, address receiver, address owner)
-        external returns (uint256 shares)
-    {
-        require(owner == msg.sender, "SparkBoostedVault/not-owner");
-        shares = _burn(assets, receiver, owner);
+    function withdraw() external returns (uint256 assets) {
+        assets = _burn();
     }
 
     /**********************************************************************************************/
@@ -201,7 +200,8 @@ contract SparkBoostedVault is AccessControlEnumerable, ISparkBoostedVault {
     }
 
     function maxDeposit(address receiver) external view returns (uint256) {
-        if (hasRole(TAKER_ROLE, receiver)) return 0;
+        if (hasRole(TAKER_ROLE, receiver))     return 0;
+        if (positions[receiver].principal > 0) return 0;
         uint256 totalAssets_ = totalAssets();
         uint256 depositCap_  = depositCap;
         return depositCap_ <= totalAssets_ ? 0 : depositCap_ - totalAssets_;
@@ -215,18 +215,6 @@ contract SparkBoostedVault is AccessControlEnumerable, ISparkBoostedVault {
 
     function previewDeposit(uint256 assets) external view returns (uint256) {
         return convertToShares(assets);
-    }
-
-    function previewWithdraw(uint256 assets, address owner) external view returns (uint256) {
-        require(
-            IERC20(asset).balanceOf(address(this)) >= assets,
-            "SparkBoostedVault/insufficient-liquidity"
-        );
-        uint256 withdrawable_ = withdrawableOf(owner);
-        require(assets <= withdrawable_, "SparkBoostedVault/insufficient-balance");
-        if (withdrawable_ == 0) return 0;
-        uint256 f = assets * RAY / withdrawable_;
-        return positions[owner].shares * f / RAY;
     }
 
     function totalAssets() public view returns (uint256) {
@@ -305,83 +293,45 @@ contract SparkBoostedVault is AccessControlEnumerable, ISparkBoostedVault {
     /*** Position mutation internals                                                            ***/
     /**********************************************************************************************/
 
-    function _mint(uint256 assets, uint256 shares, address receiver) internal {
-        require(receiver != address(0) && receiver != address(this), "SparkBoostedVault/invalid-address");
-
-        require(
-            !hasRole(TAKER_ROLE, msg.sender) && !hasRole(TAKER_ROLE, receiver),
-            "SparkBoostedVault/taker-cannot-deposit"
-        );
-
+    function _mint(uint256 assets, uint256 shares) internal {
+        require(!hasRole(TAKER_ROLE, msg.sender),     "SparkBoostedVault/taker-cannot-deposit");
+        require(positions[msg.sender].principal == 0, "SparkBoostedVault/existing-position");
         require(totalAssets() + assets <= depositCap, "SparkBoostedVault/deposit-cap-exceeded");
 
         _pullAsset(msg.sender, assets);
 
-        Position storage p = positions[receiver];
-        uint256 oldP       = p.principal;
-        uint64  newT0;
-        if (oldP == 0) {
-            newT0 = uint64(block.timestamp);
-        } else {
-            // Weighted by principal:
-            //   newT0 = (oldP * oldT0 + assets * now) / (oldP + assets)
-            uint256 blended = (oldP * uint256(p.depositTime) + assets * block.timestamp)
-                / (oldP + assets);
-            newT0 = uint64(blended);
-        }
-
-        p.principal   = oldP + assets;
-        p.shares      = p.shares + shares;
-        p.depositTime = newT0;
+        uint64 t0 = uint64(block.timestamp);
+        positions[msg.sender] = Position({
+            principal:   assets,
+            shares:      shares,
+            depositTime: t0
+        });
 
         totalShares    = totalShares    + shares;
         totalPrincipal = totalPrincipal + assets;
 
-        emit Deposit(msg.sender, receiver, assets, shares);
-        emit PositionUpdated(receiver, p.principal, p.shares, newT0);
+        emit Deposit(msg.sender, msg.sender, assets, shares);
+        emit PositionUpdated(msg.sender, assets, shares, t0);
     }
 
-    function _burn(uint256 assets, address receiver, address owner) internal returns (uint256 sharesBurned) {
+    function _burn() internal returns (uint256 assets) {
         drip();
 
-        // f is the withdrawal fraction in ray. Reduce shares, principal, and shift depositTime
-        // toward `now` by this fraction. Unvested yield in the burned shares is forfeited and
-        // stays in the vault (claimable by TAKER_ROLE).
-        uint256 f = _withdrawalFraction(owner, assets);
+        // Full-exit only: the caller withdraws their entire vested balance. Unvested yield in the
+        // closed position is forfeited and stays in the vault (claimable by TAKER_ROLE).
+        assets = withdrawableOf(msg.sender);
+        require(assets > 0, "SparkBoostedVault/zero-position");
 
-        sharesBurned = _applyBurn(owner, f);
+        Position memory p = positions[msg.sender];
+        delete positions[msg.sender];
 
-        _pushAsset(receiver, assets);
+        totalShares    = totalShares    - p.shares;
+        totalPrincipal = totalPrincipal - p.principal;
 
-        emit Withdraw(msg.sender, receiver, owner, assets, sharesBurned);
-    }
+        _pushAsset(msg.sender, assets);
 
-    function _withdrawalFraction(address owner, uint256 assets) internal view returns (uint256) {
-        uint256 withdrawable_ = withdrawableOf(owner);
-        require(assets <= withdrawable_, "SparkBoostedVault/insufficient-balance");
-        require(withdrawable_ > 0,       "SparkBoostedVault/zero-position");
-        return assets * RAY / withdrawable_;
-    }
-
-    function _applyBurn(address owner, uint256 f) internal returns (uint256 sharesBurned) {
-        Position storage p = positions[owner];
-        uint256 pBurned    = p.principal * f / RAY;
-
-        sharesBurned       = p.shares * f / RAY;
-
-        // newT0 = oldT0 + f * (now - oldT0)
-        uint64 newT0 = uint64(
-            uint256(p.depositTime) + (block.timestamp - uint256(p.depositTime)) * f / RAY
-        );
-
-        p.shares      = p.shares      - sharesBurned;
-        p.principal   = p.principal   - pBurned;
-        p.depositTime = newT0;
-
-        totalShares    = totalShares    - sharesBurned;
-        totalPrincipal = totalPrincipal - pBurned;
-
-        emit PositionUpdated(owner, p.principal, p.shares, newT0);
+        emit Withdraw(msg.sender, msg.sender, msg.sender, assets, p.shares);
+        emit PositionUpdated(msg.sender, 0, 0, 0);
     }
 
     /**********************************************************************************************/

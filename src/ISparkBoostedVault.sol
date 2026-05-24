@@ -163,23 +163,16 @@ interface ISparkBoostedVault is IAccessControlEnumerable {
     function setVsrBounds(uint256 minVsr_, uint256 maxVsr_)  external;
     function take(uint256 value)                             external;
 
-    function deposit(uint256 assets, address receiver)
-        external returns (uint256 shares);
+    function deposit(uint256 assets)                  external returns (uint256 shares);
+    function deposit(uint256 assets, uint16 referral) external returns (uint256 shares);
+    function withdraw()                               external returns (uint256 assets);
 
-    function deposit(uint256 assets, address receiver, uint16 referral)
-        external returns (uint256 shares);
-
-    function withdraw(uint256 assets, address receiver, address owner)
-        external returns (uint256 shares);
-
-    function totalAssets()                                external view returns (uint256);
-    function assetsOutstanding()                          external view returns (uint256);
-    function convertToAssets(uint256 shares)              external view returns (uint256);
-    function convertToShares(uint256 assets)              external view returns (uint256);
-    function maxDeposit(address receiver)                 external view returns (uint256);
-    function maxWithdraw(address owner)                   external view returns (uint256);
-    function previewDeposit(uint256 assets)               external view returns (uint256);
-    function previewWithdraw(uint256 assets, address owner)
-        external view returns (uint256);
+    function totalAssets()                   external view returns (uint256);
+    function assetsOutstanding()             external view returns (uint256);
+    function convertToAssets(uint256 shares) external view returns (uint256);
+    function convertToShares(uint256 assets) external view returns (uint256);
+    function maxDeposit(address receiver)    external view returns (uint256);
+    function maxWithdraw(address owner)      external view returns (uint256);
+    function previewDeposit(uint256 assets)  external view returns (uint256);
 
 }
