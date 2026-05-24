@@ -49,8 +49,10 @@ contract SparkBoostedVault is AccessControlEnumerable, ISparkBoostedVault {
     string public symbol;
 
     // The vesting window for the per-user yield multiplier. Both are durations in seconds. Yield
-    // earned by a user is multiplied by 0 if elapsed < cliff, else by min(elapsed / term, 1),
-    // where elapsed = block.timestamp - position.depositTime.
+    // earned by a user is multiplied by 0 if elapsed < cliff, else by min((elapsed / term)^2, 1),
+    // where elapsed = block.timestamp - position.depositTime. The quadratic ramp is slow at the
+    // start and fast at the end, so early exits forfeit disproportionately more yield than under
+    // a linear curve.
     uint64 public immutable term;
     uint64 public immutable cliff;
 
@@ -242,7 +244,12 @@ contract SparkBoostedVault is AccessControlEnumerable, ISparkBoostedVault {
     }
 
     // Returns the vesting multiplier [ray] for the user's current position. A return of 0 means
-    // none of the yield has vested; a return of RAY means yield is fully vested.
+    // none of the yield has vested; a return of RAY means yield is fully vested. The shape is a
+    // quadratic ease-in: m = (elapsed/term)^2 between cliff and term, zero before cliff, one
+    // after term.
+    //
+    // Overflow note: elapsed is gated by `elapsed < term` and term is uint64, so elapsed^2 is
+    // at most 2^128. Multiplied by RAY (~2^90) the intermediate fits comfortably in uint256.
     function vestingMultiplier(address user) public view returns (uint256) {
         uint64 t0 = positions[user].depositTime;
         if (t0 == 0) return 0;
@@ -251,7 +258,7 @@ contract SparkBoostedVault is AccessControlEnumerable, ISparkBoostedVault {
         uint256 term_   = term;
         if (elapsed < cliff_) return 0;
         if (elapsed >= term_) return RAY;
-        return elapsed * RAY / term_;
+        return (elapsed * elapsed) * RAY / (term_ * term_);
     }
 
     function vestedYieldOf(address user) public view returns (uint256) {

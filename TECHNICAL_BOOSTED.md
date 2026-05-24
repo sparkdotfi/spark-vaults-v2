@@ -2,7 +2,7 @@
 
 ## Overview
 
-SparkBoostedVault is a per-user vesting variant of [SparkVault](./src/SparkVault.sol). Each user's yield is gated by a vesting curve defined by two constructor-set durations: **`cliff`** and **`term`**. Principal is always withdrawable; yield is multiplied by a curve that is 0 before `cliff` and then linear from 0 to 1 over the entire `[0, term]` window (with the pre-cliff portion zeroed out — a jump at cliff).
+SparkBoostedVault is a per-user vesting variant of [SparkVault](./src/SparkVault.sol). Each user's yield is gated by a vesting curve defined by two constructor-set durations: **`cliff`** and **`term`**. Principal is always withdrawable; yield is multiplied by a curve that is 0 before `cliff` and then a **quadratic ease-in** `(elapsed/term)²` from 0 to 1 over the `[0, term]` window (with the pre-cliff portion zeroed out — a jump at cliff). Because the ramp is quadratic and slow at the start, early exits forfeit disproportionately more yield than they would under a linear curve.
 
 **Positions are one-shot and locked to msg.sender:**
 
@@ -30,11 +30,13 @@ Let `elapsed = block.timestamp - depositTime`. Then:
 
 ```
 m(elapsed) = 0                        if elapsed <  cliff
-m(elapsed) = elapsed / term           if elapsed >= cliff and elapsed < term
+m(elapsed) = (elapsed / term)²        if elapsed >= cliff and elapsed < term
 m(elapsed) = 1                        if elapsed >= term
 ```
 
-Geometrically: take the line `y = elapsed/term`, clamp at 1 past term, and **zero it out before cliff**. The result is discontinuous — at `elapsed == cliff`, m jumps from 0 to `cliff/term`. After that, m grows linearly until elapsed reaches term.
+Geometrically: take the parabola `y = (elapsed/term)²`, clamp at 1 past term, and **zero it out before cliff**. The result is discontinuous — at `elapsed == cliff`, m jumps from 0 to `(cliff/term)²`. After that, m grows quadratically until elapsed reaches term.
+
+Key intuition: at half-term, only **25%** of yield is vested (vs. 50% under linear). At three-quarter term, ~56% is vested (vs. 75% linear). The bulk of the boost is concentrated in the tail near `term`, which makes the curve materially more punishing on early exits than the linear shape.
 
 ## Derived quantities
 
@@ -92,12 +94,24 @@ Deposit 100 at t=0. Position: P=100, S=100, T0=0.
 |----------|--------|-----------|---------|--------|--------------|------------------------|
 | 30       | 100.82 | 0.82      | 0       | 0      | 100.00       | gets 100, forfeits 0.82 |
 | 89       | 102.44 | 2.44      | 0       | 0      | 100.00       | gets 100, forfeits 2.44 |
-| **90**   | 102.47 | 2.47      | 0.2466  | 0.609  | **100.61**   | gets 100.61, forfeits 1.86 |
-| 180      | 104.93 | 4.93      | 0.4932  | 2.432  | 102.43       | gets 102.43, forfeits 2.50 |
+| **90**   | 102.47 | 2.47      | 0.0608  | 0.150  | **100.15**   | gets 100.15, forfeits 2.32 |
+| 180      | 104.93 | 4.93      | 0.2432  | 1.200  | 101.20       | gets 101.20, forfeits 3.73 |
+| 270      | 107.40 | 7.40      | 0.5472  | 4.048  | 104.05       | gets 104.05, forfeits 3.35 |
 | 365      | 110.00 | 10.00     | 1.0000  | 10.00  | 110.00       | gets 110, forfeits 0 |
 | 730      | 120.00 | 20.00     | 1.0000  | 20.00  | 120.00       | gets 120, forfeits 0 |
 
-The **jump at t=90** is the cliff threshold. A user who exits at t=89 gets only principal; one block past cliff and they're paid out `cliff/term · raw_yield ≈ 0.609` in one go, and the multiplier grows linearly from there. After term the multiplier saturates at 1, and further yield is fully claimable as it accrues. Forfeited yield stays in the vault and becomes TAKER-claimable surplus.
+Compare with the linear curve at the same times:
+
+| t (days) | m_linear | vested_linear | m_quad  | vested_quad | quad / linear |
+|----------|----------|---------------|---------|-------------|---------------|
+| 90       | 0.2466   | 0.609         | 0.0608  | 0.150       | 25%           |
+| 180      | 0.4932   | 2.432         | 0.2432  | 1.200       | 49%           |
+| 270      | 0.7397   | 5.473         | 0.5472  | 4.048       | 74%           |
+| 365      | 1.0000   | 10.00         | 1.0000  | 10.00       | 100%          |
+
+A user who exits at t=180 under the quadratic curve receives roughly **half** of what they'd receive under linear — most of the boost is back-loaded into the final stretch before term. The cliff jump at t=90 is also much smaller (0.15 vs 0.61), so even crossing cliff is a relatively modest milestone; the meaningful vesting happens later.
+
+After term the multiplier saturates at 1, and further yield is fully claimable as it accrues. Forfeited yield stays in the vault and becomes TAKER-claimable surplus.
 
 ---
 
@@ -122,7 +136,7 @@ Because the contract uses `msg.sender` as the only identity, a user who wants pa
 
 | Property                  | Mechanism                                                                  |
 |---------------------------|----------------------------------------------------------------------------|
-| Per-user vesting curve    | `m = 0 if elapsed < cliff else min(elapsed/term, 1)`                       |
+| Per-user vesting curve    | `m = 0 if elapsed < cliff else min((elapsed/term)², 1)` (quadratic ease-in) |
 | Position model            | One per address, one-shot, no top-ups, no partial withdraws                |
 | Principal                 | Always paid out on `withdraw()` (even before cliff)                        |
 | Forfeited yield           | Stays in vault, takeable by `TAKER_ROLE`                                   |
