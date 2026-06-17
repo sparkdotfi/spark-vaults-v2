@@ -23,29 +23,25 @@ interface ISparkBoostedVault is IAccessControlEnumerable {
 
     /**
      * @notice ERC4626 deposit event.
-     * @param  sender The msg.sender that supplied the assets.
-     * @param  owner  The address receiving the position credit.
-     * @param  assets The amount of underlying assets deposited.
-     * @param  shares The raw rate-based shares credited to the position.
+     * @param  owner       The address depositing the assets.
+     * @param  assets      The amount of underlying assets deposited.
+     * @param  shares      The raw rate-based shares credited to the position.
+     * @param  depositTime The timestamp of the deposit [unix epoch time]
      */
     event Deposit(
-        address indexed sender,
         address indexed owner,
         uint256 assets,
-        uint256 shares
+        uint256 shares,
+        uint64  depositTime
     );
 
     /**
      * @notice ERC4626 withdraw event.
-     * @param  sender   The msg.sender initiating the withdraw.
-     * @param  receiver The address receiving the withdrawn assets.
      * @param  owner    The position owner whose state was reduced.
      * @param  assets   The amount of underlying assets sent to receiver.
      * @param  shares   The raw rate-based shares burned from the position.
      */
     event Withdraw(
-        address indexed sender,
-        address indexed receiver,
         address indexed owner,
         uint256 assets,
         uint256 shares
@@ -107,20 +103,6 @@ interface ISparkBoostedVault is IAccessControlEnumerable {
      * @param  value The amount taken [asset units]
      */
     event Take(address indexed to, uint256 value);
-
-    /**
-     * @notice Emitted when a user's position state is mutated.
-     * @param  owner       The position owner.
-     * @param  principal   The new principal [asset units]
-     * @param  shares      The new raw shares.
-     * @param  depositTime The new effective deposit timestamp [unix epoch time]
-     */
-    event PositionUpdated(
-        address indexed owner,
-        uint256 principal,
-        uint256 shares,
-        uint64  depositTime
-    );
 
     function asset()          external view returns (address);
     function decimals()       external view returns (uint8);

@@ -81,12 +81,12 @@ contract SparkBoostedVault is AccessControlEnumerable, ISparkBoostedVault {
     /**********************************************************************************************/
 
     constructor(
-        address asset_,
-        string memory name_,
-        string memory symbol_,
-        address admin,
-        uint64 term_,
-        uint64 cliff_
+        address        asset_,
+        string  memory name_,
+        string  memory symbol_,
+        address        admin,
+        uint64         term_,
+        uint64         cliff_
     ) {
         require(term_  > 0,      "SparkBoostedVault/invalid-term");
         require(cliff_ <= term_, "SparkBoostedVault/cliff-gt-term");
@@ -204,14 +204,17 @@ contract SparkBoostedVault is AccessControlEnumerable, ISparkBoostedVault {
     function maxDeposit(address receiver) external view returns (uint256) {
         if (hasRole(TAKER_ROLE, receiver))     return 0;
         if (positions[receiver].principal > 0) return 0;
+
         uint256 totalAssets_ = totalAssets();
         uint256 depositCap_  = depositCap;
+
         return depositCap_ <= totalAssets_ ? 0 : depositCap_ - totalAssets_;
     }
 
     function maxWithdraw(address owner) external view returns (uint256) {
         uint256 liquidity         = IERC20(asset).balanceOf(address(this));
         uint256 userWithdrawable_ = withdrawableOf(owner);
+
         return liquidity > userWithdrawable_ ? userWithdrawable_ : liquidity;
     }
 
@@ -252,29 +255,39 @@ contract SparkBoostedVault is AccessControlEnumerable, ISparkBoostedVault {
     // at most 2^128. Multiplied by RAY (~2^90) the intermediate fits comfortably in uint256.
     function vestingMultiplier(address user) public view returns (uint256) {
         uint64 t0 = positions[user].depositTime;
+
         if (t0 == 0) return 0;
+
         uint256 elapsed = block.timestamp - uint256(t0);
         uint256 cliff_  = cliff;
         uint256 term_   = term;
+
         if (elapsed < cliff_) return 0;
         if (elapsed >= term_) return RAY;
+
         return (elapsed * elapsed) * RAY / (term_ * term_);
     }
 
     function vestedYieldOf(address user) public view returns (uint256) {
-        Position memory p   = positions[user];
-        uint256 raw         = p.shares * nowChi() / RAY;
-        if (raw <= p.principal) return 0;
-        uint256 yield_      = raw - p.principal;
+        Position memory p  = positions[user];
+        uint256 rawAssets  = p.shares * nowChi() / RAY;
+
+        if (rawAssets <= p.principal) return 0;
+
+        uint256 yield_ = rawAssets - p.principal;
+
         return yield_ * vestingMultiplier(user) / RAY;
     }
 
     function unvestedYieldOf(address user) external view returns (uint256) {
         Position memory p = positions[user];
-        uint256 raw       = p.shares * nowChi() / RAY;
-        if (raw <= p.principal) return 0;
-        uint256 yield_    = raw - p.principal;
-        uint256 vested_   = yield_ * vestingMultiplier(user) / RAY;
+        uint256 rawAssets = p.shares * nowChi() / RAY;
+
+        if (rawAssets <= p.principal) return 0;
+
+        uint256 yield_  = rawAssets - p.principal;
+        uint256 vested_ = yield_ * vestingMultiplier(user) / RAY;
+
         return yield_ - vested_;
     }
 
@@ -289,6 +302,7 @@ contract SparkBoostedVault is AccessControlEnumerable, ISparkBoostedVault {
     function assetsOutstanding() public view returns (uint256) {
         uint256 liquidity_   = IERC20(asset).balanceOf(address(this));
         uint256 totalAssets_ = totalAssets();
+
         return totalAssets_ >= liquidity_ ? totalAssets_ - liquidity_ : 0;
     }
 
@@ -308,17 +322,17 @@ contract SparkBoostedVault is AccessControlEnumerable, ISparkBoostedVault {
         _pullAsset(msg.sender, assets);
 
         uint64 t0 = uint64(block.timestamp);
+
         positions[msg.sender] = Position({
-            principal:   assets,
-            shares:      shares,
-            depositTime: t0
+            principal   : assets,
+            shares      : shares,
+            depositTime : t0
         });
 
-        totalShares    = totalShares    + shares;
-        totalPrincipal = totalPrincipal + assets;
+        totalShares    += shares;
+        totalPrincipal += assets;
 
-        emit Deposit(msg.sender, msg.sender, assets, shares);
-        emit PositionUpdated(msg.sender, assets, shares, t0);
+        emit Deposit(msg.sender, assets, shares, t0);
     }
 
     function _burn() internal returns (uint256 assets) {
@@ -332,13 +346,12 @@ contract SparkBoostedVault is AccessControlEnumerable, ISparkBoostedVault {
         Position memory p = positions[msg.sender];
         delete positions[msg.sender];
 
-        totalShares    = totalShares    - p.shares;
-        totalPrincipal = totalPrincipal - p.principal;
+        totalShares    -= p.shares;
+        totalPrincipal -= p.principal;
 
         _pushAsset(msg.sender, assets);
 
-        emit Withdraw(msg.sender, msg.sender, msg.sender, assets, p.shares);
-        emit PositionUpdated(msg.sender, 0, 0, 0);
+        emit Withdraw(msg.sender, assets, p.shares);
     }
 
     /**********************************************************************************************/
